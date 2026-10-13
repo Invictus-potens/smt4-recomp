@@ -30,7 +30,18 @@
   3DS `srv` semantics for session handles). Whether the game is
   properly closing these handles, or this is a leak that would
   eventually exhaust handle space in a long session, is unconfirmed.
-  Not reported upstream yet — needs more evidence before filing.
+  Not reported upstream — not enough evidence to be worth filing.
+- **Fatal crash after naming the character** (confirmed, reported
+  upstream: [fearkov/zakuro#15](https://github.com/fearkov/zakuro/issues/15)).
+  A couple minutes into the game, right as it loads the next scene
+  after character creation: an unmapped read at guest address
+  `0x00000000`, then the DSP re-uploads its firmware component (an
+  audio-context switch), then the title's own `svcSignalEvent` fails
+  on handle `0x10030` ("does not exist"), reported as a fatal error —
+  `0xD8E007F7` decodes to kernel/invalid-handle (result desc 1015).
+  Likely a thread-sync event the game expects to keep across the
+  scene transition that Zakuro's kernel or DSP scene-switch handling
+  closes early. Blocks all further progress until fixed upstream.
 - Overrides directory is empty so far; nothing has needed a hand
   fix yet.
 
