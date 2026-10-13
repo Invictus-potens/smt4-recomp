@@ -1,0 +1,13 @@
+# sdds4, recompiled by 3dsrecomp port
+
+[package]
+name = "smt4"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+zakuro = { git = "https://github.com/fearkov/zakuro" }
+
+# a project of its own, whatever directory it sits in
+[workspace]
