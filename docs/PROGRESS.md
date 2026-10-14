@@ -31,17 +31,25 @@
   properly closing these handles, or this is a leak that would
   eventually exhaust handle space in a long session, is unconfirmed.
   Not reported upstream — not enough evidence to be worth filing.
-- **Fatal crash after naming the character** (confirmed, reported
-  upstream: [fearkov/zakuro#15](https://github.com/fearkov/zakuro/issues/15)).
-  A couple minutes into the game, right as it loads the next scene
-  after character creation: an unmapped read at guest address
-  `0x00000000`, then the DSP re-uploads its firmware component (an
-  audio-context switch), then the title's own `svcSignalEvent` fails
-  on handle `0x10030` ("does not exist"), reported as a fatal error —
-  `0xD8E007F7` decodes to kernel/invalid-handle (result desc 1015).
-  Likely a thread-sync event the game expects to keep across the
-  scene transition that Zakuro's kernel or DSP scene-switch handling
-  closes early. Blocks all further progress until fixed upstream.
+- **Fatal crash after naming the character — FIXED upstream in Zakuro
+  v0.2.27** ([fearkov/zakuro#15](https://github.com/fearkov/zakuro/issues/15)).
+  Root cause: `GetSemaphoreEventHandle` cached the kernel event handle
+  it created and never reset that cache in `UNLOAD_COMPONENT`. The
+  title closes its copy of that handle as part of shutting the DSP
+  down for a scene transition (the usual `ndspExit`/`ndspInit`
+  pattern), then asks for the handle again when it reloads the DSP
+  for the next scene — Zakuro handed back the same, now-closed handle
+  number instead of a fresh one, and the title's own `svcSignalEvent`
+  on it failed as invalid (`0xD8E007F7`, kernel/invalid-handle,
+  result desc 1015), reported as a fatal error at pc `0x0013A8D0`.
+  Traced with a short debug-logged repro (loaded a save right before
+  the crash point) that caught the exact handle lifecycle: DSP shut
+  down → `thread5`/`thread6` exit → DSP firmware reloaded → crash.
+  fearkov fixed it independently in v0.2.27 (`GetSemaphoreEventHandle`
+  now hands out a fresh handle to the same event every time instead of
+  caching one), landing within hours of the issue being filed.
+  Confirmed the title continues past the crash point and into
+  real gameplay with `smt4-recomp` rebuilt against v0.2.27.
 - Overrides directory is empty so far; nothing has needed a hand
   fix yet.
 
@@ -54,3 +62,5 @@
   this title.
 - Watch handle counts over a longer play session to settle the
   `APT:U` question above.
+- Keep playing past where #15 used to block progress to find the next
+  issue, if any.
