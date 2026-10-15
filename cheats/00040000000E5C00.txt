@@ -22,7 +22,8 @@ D1000000 00000000
 08291CB4 03E703E7
 18291CB8 000003E7
 
-[60 FPS]
+[60 FPS (2x speed)]
+*The game logic is tied to the frame rate, so everything runs twice as fast. Turning it off does not bring the normal speed back, use 30 FPS (normal speed) for that.
 204E3BA0 00000000
 *by @lucky, via Reshiban/60FPS-AR-CHEATS-3DS
 
@@ -73,3 +74,8 @@ D1000000 00000000
 [Demon EXP x5]
 *Multiplies the EXP demons get from battles (party and stock). Needs the smt4-recomp build. Turn on only one Demon EXP multiplier.
 204EFF03 00000005
+
+[30 FPS (normal speed)]
+*The game's default. Turn on to undo 60 FPS: Zakuro doesn't restore the old value when a cheat or enhancement is turned off, and a save state made while it was on keeps it. Once the game is back to normal, save a state again and this can be turned off.
+*by @lucky, via Reshiban/60FPS-AR-CHEATS-3DS
+204E3BA0 00000001
