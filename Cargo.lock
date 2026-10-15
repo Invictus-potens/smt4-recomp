@@ -4725,7 +4725,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 [[package]]
 name = "zakuro"
 version = "0.2.27"
-source = "git+https://github.com/fearkov/zakuro#d03127d03eb489eb1cebb0ef48bbc68bf4877dd8"
+source = "git+https://github.com/Invictus-potens/zakuro?branch=widescreen#2c30c3b364e8556613d461cabe51f7460fbb2438"
 dependencies = [
  "ab_glyph",
  "cpal",
@@ -4754,7 +4754,7 @@ dependencies = [
 [[package]]
 name = "zakuro-common"
 version = "0.2.27"
-source = "git+https://github.com/fearkov/zakuro#d03127d03eb489eb1cebb0ef48bbc68bf4877dd8"
+source = "git+https://github.com/Invictus-potens/zakuro?branch=widescreen#2c30c3b364e8556613d461cabe51f7460fbb2438"
 dependencies = [
  "bitflags 2.13.2",
  "log",
@@ -4764,7 +4764,7 @@ dependencies = [
 [[package]]
 name = "zakuro-core"
 version = "0.2.27"
-source = "git+https://github.com/fearkov/zakuro#d03127d03eb489eb1cebb0ef48bbc68bf4877dd8"
+source = "git+https://github.com/Invictus-potens/zakuro?branch=widescreen#2c30c3b364e8556613d461cabe51f7460fbb2438"
 dependencies = [
  "ab_glyph",
  "bitflags 2.13.2",
@@ -4788,7 +4788,7 @@ dependencies = [
 [[package]]
 name = "zakuro-cpu"
 version = "0.2.27"
-source = "git+https://github.com/fearkov/zakuro#d03127d03eb489eb1cebb0ef48bbc68bf4877dd8"
+source = "git+https://github.com/Invictus-potens/zakuro?branch=widescreen#2c30c3b364e8556613d461cabe51f7460fbb2438"
 dependencies = [
  "log",
  "serde",
@@ -4798,7 +4798,7 @@ dependencies = [
 [[package]]
 name = "zakuro-fs"
 version = "0.2.27"
-source = "git+https://github.com/fearkov/zakuro#d03127d03eb489eb1cebb0ef48bbc68bf4877dd8"
+source = "git+https://github.com/Invictus-potens/zakuro?branch=widescreen#2c30c3b364e8556613d461cabe51f7460fbb2438"
 dependencies = [
  "crc32fast",
  "log",
@@ -4810,7 +4810,7 @@ dependencies = [
 [[package]]
 name = "zakuro-gpu"
 version = "0.2.27"
-source = "git+https://github.com/fearkov/zakuro#d03127d03eb489eb1cebb0ef48bbc68bf4877dd8"
+source = "git+https://github.com/Invictus-potens/zakuro?branch=widescreen#2c30c3b364e8556613d461cabe51f7460fbb2438"
 dependencies = [
  "ash",
  "ash-window",

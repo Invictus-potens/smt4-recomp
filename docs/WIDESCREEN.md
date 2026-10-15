@@ -63,14 +63,16 @@ wider (`240 * 16/9`, or `560` for 21:9) in every layout, and the window size
 follows. The presenters already stretch each screen's image into its
 rectangle, so nothing else changes.
 
-It's on a `widescreen` branch of the Zakuro fork for now, to be proposed
-upstream as a setting any game with a widescreen code can use. Until it's
-in, building with the widescreen needs a `[patch]` in `Cargo.toml` pointing
-at that branch.
+It's proposed upstream as a setting any game with a widescreen code can
+use, in [fearkov/zakuro#19](https://github.com/fearkov/zakuro/pull/19).
+Until it's merged, `Cargo.toml` has a `[patch]` building Zakuro from the
+fork's `widescreen` branch; drop it once the setting is upstream.
 
 ## Known limits
 
 - 2D elements drawn with their own projection (HUD, menus) are stretched
   along with the picture. At 16:9 it's 7% and hard to see; at 21:9 it shows.
+- Played at 16:9 through town, a dungeon, battles and dialogue scenes:
+  no pop-in at the edges, nothing broken.
 - Anything the game culls with its own view checks that don't use the
   camera's aspect could pop in at the new edges. Not seen yet.

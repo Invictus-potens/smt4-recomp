@@ -36,7 +36,17 @@
   [fearkov/zakuro#17](https://github.com/fearkov/zakuro/issues/17), with
   the same 30 FPS code proposed as an enhancement in
   [fearkov/zakuro#18](https://github.com/fearkov/zakuro/pull/18).
-- Ideas not started yet: [ENHANCEMENTS.md](ENHANCEMENTS.md).
+- **Widescreen** 16:9 and 21:9 (2026-10-15): the game's projection
+  widened by an override, picked from the cheat menu, with Zakuro's new
+  `Top screen shape` setting stretching the top screen to match. Played
+  in town, dungeon, battles and dialogue at 16:9 with nothing wrong. The
+  Zakuro half is proposed in
+  [fearkov/zakuro#19](https://github.com/fearkov/zakuro/pull/19); until
+  it's merged, `Cargo.toml` builds from the fork's `widescreen` branch.
+  See [WIDESCREEN.md](WIDESCREEN.md).
+- Planned, not started: quality-of-life cheats (no random encounters,
+  full compendium, easy recruit) and others in
+  [ENHANCEMENTS.md](ENHANCEMENTS.md).
 
 ## Known issues / open questions
 
@@ -78,3 +88,11 @@
 - Watch handle counts over a longer play session to settle the
   `APT:U` question above.
 - Keep playing to find the next issue, if any.
+- Upstream, waiting on the maintainer: issue
+  [#17](https://github.com/fearkov/zakuro/issues/17) (cheats left in place
+  when turned off), PRs [#18](https://github.com/fearkov/zakuro/pull/18)
+  (30 FPS) and [#19](https://github.com/fearkov/zakuro/pull/19) (top
+  screen shape). When #19 is merged, drop the `[patch]` in `Cargo.toml`;
+  if it's turned down, decide whether the widescreen stays.
+- Quality-of-life cheats: no random encounters, full compendium, easy
+  recruit.
