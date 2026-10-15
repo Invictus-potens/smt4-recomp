@@ -28,6 +28,7 @@ CFLAGS = ['-O2', '-ffp-contract=off', '-fno-math-errno', '-w']
 DECLS = [
     'extern uint32_t smt4_boost_exp(Context *ctx, uint32_t gain);\n',
     'extern uint32_t smt4_boost_demon_exp(Context *ctx, uint32_t address);\n',
+    'extern uint32_t smt4_widen_aspect(Context *ctx, uint32_t bits);\n',
 ]
 
 # (description, instruction comment, text right after it, replacement)
@@ -45,6 +46,20 @@ PATCHES = [
         '/* 0018D190 E5900000 */',
         '    uint32_t v = mem_read32(ctx, oa);',
         '    uint32_t v = smt4_boost_demon_exp(ctx, oa); /* smt4-recomp: EXP multiplier */',
+    ),
+    (
+        'widescreen: aspect (s1) on entry to the perspective builder at 0x002B761C',
+        '/* 002B761C E92D4010 */',
+        '    { uint32_t base = reg13_, p = base - 8, fin = base - 8;',
+        '    vfp1_ = smt4_widen_aspect(ctx, vfp1_); /* smt4-recomp: widescreen */\n'
+        '    { uint32_t base = reg13_, p = base - 8, fin = base - 8;',
+    ),
+    (
+        'widescreen: aspect (s3) on entry to the camera\'s SetPerspective at 0x002C1FFC',
+        '/* 002C1FFC E92D4070 */',
+        '    { uint32_t base = reg13_, p = base - 16, fin = base - 16;',
+        '    vfp3_ = smt4_widen_aspect(ctx, vfp3_); /* smt4-recomp: widescreen */\n'
+        '    { uint32_t base = reg13_, p = base - 16, fin = base - 16;',
     ),
 ]
 

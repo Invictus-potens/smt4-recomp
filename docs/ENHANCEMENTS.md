@@ -24,7 +24,13 @@ the Gauntlet Hunt log), so losing it costs little.
 
 No work needed here beyond telling people the option exists.
 
-## 2. True widescreen: real work, no shortcut found
+## 2. True widescreen: working, waiting on Zakuro
+
+Done as a prototype: the game's projection is patched to draw a wider
+scene, and a new Zakuro setting stretches the top screen to match. See
+[WIDESCREEN.md](WIDESCREEN.md). The Zakuro half isn't upstream yet.
+
+The notes below are from before it was done.
 
 What "Top screen only" does NOT do: it doesn't change the rendered
 aspect ratio. The 3D scene is still composed for the 3DS's 400×240
@@ -75,15 +81,27 @@ which Zakuro reads natively):
   build on and off rather than writing game values. Done, see
   [MULTIPLIERS.md](MULTIPLIERS.md).
 
-Possible additions, roughly by how useful they'd be:
-- **No random encounters / instant kill**: common quality-of-life
-  codes for grinding-heavy Atlus RPGs; worth searching
-  gamegenie.53lu.com / GBAtemp's SMT4 cheat thread for codes beyond
-  what JourneyOver's repo has.
-- **Demon compendium codes** (unlock/max all demons): the GBAtemp
-  cheat-table thread (LuckyCross) made per-demon AR codes for Cheat
-  Engine; porting the useful ones to the Gateway/AR text format Zakuro
-  reads is mechanical but tedious (dozens of demons).
+Planned quality-of-life cheats. For each one, first look for an existing
+community code (JourneyOver's repo, GBAtemp's SMT4 cheat thread,
+gamegenie.53lu.com); if there isn't one, find the game's own check and
+switch it with an override and a control byte, the way the multipliers
+work:
+
+- **No random encounters**: stop the encounter check from triggering
+  while walking in the field and dungeons. Story and boss fights stay.
+  Best as a toggle, so grinding is still possible with it off.
+- **Full compendium**: register every demon in the compendium so any of
+  them can be summoned (for Macca). The GBAtemp cheat-table thread
+  (LuckyCross) has per-demon codes for Cheat Engine that could be ported
+  to the Gateway/AR format Zakuro reads, but that's dozens of codes;
+  finding the registration flags or the "add to compendium" function
+  and filling it in one go is likely simpler.
+- **Easy recruit**: make negotiations succeed, for example by having the
+  demon accept at the first answer or skipping the item and Macca
+  demands. Needs the negotiation outcome check found in the code.
+
+Other ideas:
+- **Instant kill**: battle cheat, lower priority.
 - **60 FPS as a Zakuro "enhancement"**: merged as
   [fearkov/zakuro#16](https://github.com/fearkov/zakuro/pull/16) (rev0). A
   30 FPS one to undo it is proposed in

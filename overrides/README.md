@@ -7,6 +7,8 @@ format. They're compiled in by `3dsrecomp port ... --overrides overrides/`.
 
 - `multipliers.c`: Macca, hero EXP, demon EXP and App Points multipliers driven by the
   cheat menu. See [docs/MULTIPLIERS.md](../docs/MULTIPLIERS.md).
+- `widescreen.c`: the wider projection behind the widescreen cheats. See
+  [docs/WIDESCREEN.md](../docs/WIDESCREEN.md).
 
 Code that isn't at a function entry can't be overridden; those spots are
 patched in the generated C by `scripts/patch_generated.py` instead.

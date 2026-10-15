@@ -32,6 +32,8 @@ need fixing, community cheat codes, and build/progress notes.
 - `docs/PROGRESS.md`: build status, code coverage, known issues.
 - `docs/MULTIPLIERS.md`: how the multipliers work and how each hook was
   found.
+- `docs/WIDESCREEN.md`: the widescreen cheats, and the Zakuro setting they
+  need.
 - `docs/ENHANCEMENTS.md`: ideas: screens, widescreen, cheats.
 
 ## What's NOT here, and never will be

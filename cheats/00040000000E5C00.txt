@@ -79,3 +79,11 @@ D1000000 00000000
 *The game's default. Turn on to undo 60 FPS: Zakuro doesn't restore the old value when a cheat or enhancement is turned off, and a save state made while it was on keeps it. Once the game is back to normal, save a state again and this can be turned off.
 *by @lucky, via Reshiban/60FPS-AR-CHEATS-3DS
 204E3BA0 00000001
+
+[Widescreen 16:9]
+*Draws the 3D scene wider (more view at the sides, same height). Set Zakuro's Top screen shape to 16:9 too, or the picture comes out squeezed. Needs the smt4-recomp build. Takes effect at the next scene change.
+204EFF04 00000001
+
+[Widescreen 21:9]
+*Draws the 3D scene wider (more view at the sides, same height). Set Zakuro's Top screen shape to 21:9 too, or the picture comes out squeezed. Needs the smt4-recomp build. Takes effect at the next scene change.
+204EFF04 00000002
