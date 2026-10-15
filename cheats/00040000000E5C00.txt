@@ -49,3 +49,15 @@ D1000000 00000000
 [EXP x5]
 *Multiplies the hero's EXP from battles. Needs the smt4-recomp build. Turn on only one EXP multiplier.
 204EFF01 00000005
+
+[App Points x2]
+*Multiplies App Points gained. Needs the smt4-recomp build. Turn on only one App Points multiplier.
+204EFF02 00000002
+
+[App Points x3]
+*Multiplies App Points gained. Needs the smt4-recomp build. Turn on only one App Points multiplier.
+204EFF02 00000003
+
+[App Points x5]
+*Multiplies App Points gained. Needs the smt4-recomp build. Turn on only one App Points multiplier.
+204EFF02 00000005

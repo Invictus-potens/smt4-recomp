@@ -35,8 +35,8 @@ extern void smt4_log_override(const char *resource, uint32_t lr,
                               int32_t num, int32_t den);
 
 #define CTRL_MACCA      0x004EFF00u
-#define CTRL_EXP        0x004EFF01u /* reserved, hook pending */
-#define CTRL_APP_POINTS 0x004EFF02u /* reserved, hook pending */
+#define CTRL_EXP        0x004EFF01u
+#define CTRL_APP_POINTS 0x004EFF02u
 
 #define SAVE_MACCA 0x08291C8Cu
 
@@ -51,6 +51,7 @@ typedef struct {
 
 static Knob macca_knob = { CTRL_MACCA, 0, 0 };
 static Knob exp_knob = { CTRL_EXP, 0, 0 };
+static Knob app_knob = { CTRL_APP_POINTS, 0, 0 };
 
 static uint64_t now_ms(void) {
     struct timespec ts;
@@ -109,4 +110,24 @@ void f_00295EAC(Context *ctx) {
 RECOMP_OVERRIDE(0x00295EA8) {
     boost_macca(ctx);
     CALL(RECOMP_ORIGINAL(0x00295EA8));
+}
+
+/* f_0026E8A0 is addAppPoints(int32 delta): delta in r0, it adds to both
+ * the lifetime-earned counter (base+0x986C) and the current App Points
+ * (base+0x9870 = 0x0829B470), then clamps the current value to the max.
+ * Hooked the same temporary way as addMacca (symbol renamed in code078.o). */
+extern void orig_f_0026E8A0(Context *ctx);
+
+void f_0026E8A0(Context *ctx) {
+    int32_t delta = (int32_t)ctx->r[0];
+    if (delta > 0) {
+        uint32_t mult = knob_read(ctx, &app_knob);
+        if (mult > 1) {
+            int64_t boosted = (int64_t)delta * mult;
+            if (boosted > INT32_MAX) boosted = INT32_MAX;
+            ctx->r[0] = (uint32_t)(int32_t)boosted;
+            smt4_log_override("AppPoints", ctx->r[14], mem_read32(ctx, 0x0829B470u), delta, (int32_t)boosted, (int32_t)mult, 1);
+        }
+    }
+    CALL(orig_f_0026E8A0);
 }
