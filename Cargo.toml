@@ -12,10 +12,3 @@ zakuro = { git = "https://github.com/fearkov/zakuro" }
 
 # a project of its own, whatever directory it sits in
 [workspace]
-
-# Zakuro with the "Top screen shape" setting the widescreen cheats need
-# (fearkov/zakuro#19). Drop this once it's merged upstream.
-[patch."https://github.com/fearkov/zakuro"]
-zakuro = { git = "https://github.com/Invictus-potens/zakuro", branch = "widescreen" }
-zakuro-core = { git = "https://github.com/Invictus-potens/zakuro", branch = "widescreen" }
-zakuro-gpu = { git = "https://github.com/Invictus-potens/zakuro", branch = "widescreen" }

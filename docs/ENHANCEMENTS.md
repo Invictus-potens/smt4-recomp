@@ -28,7 +28,7 @@ No work needed here beyond telling people the option exists.
 
 Done as a prototype: the game's projection is patched to draw a wider
 scene, and a new Zakuro setting stretches the top screen to match. See
-[WIDESCREEN.md](WIDESCREEN.md). The Zakuro half is proposed in
+[WIDESCREEN.md](WIDESCREEN.md). The Zakuro half was merged in
 [fearkov/zakuro#19](https://github.com/fearkov/zakuro/pull/19).
 
 The notes below are from before it was done.
@@ -105,6 +105,6 @@ Other ideas:
 - **Instant kill**: battle cheat, lower priority.
 - **60 FPS as a Zakuro "enhancement"**: merged as
   [fearkov/zakuro#16](https://github.com/fearkov/zakuro/pull/16) (rev0). A
-  30 FPS one to undo it is proposed in
+  30 FPS one to undo it was merged in
   [fearkov/zakuro#18](https://github.com/fearkov/zakuro/pull/18).
 - **Widescreen override**: done, in `overrides/widescreen.c` (item 2).

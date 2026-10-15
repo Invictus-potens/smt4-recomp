@@ -13,7 +13,8 @@ It takes two parts that have to agree:
 2. **Zakuro shows the top screen that wide.** The game still draws into
    the console's 400x240 framebuffer, so the wider scene comes out squeezed
    until it's stretched back out. That's the `Top screen shape` setting
-   (Settings, Graphics), which isn't in upstream Zakuro yet (see below).
+   (Settings, Graphics), in Zakuro since
+   [fearkov/zakuro#19](https://github.com/fearkov/zakuro/pull/19).
 
 On its own, the cheat squeezes the picture and the setting stretches it;
 together they cancel out into a correct, wider view. Use the same shape in
@@ -63,10 +64,10 @@ wider (`240 * 16/9`, or `560` for 21:9) in every layout, and the window size
 follows. The presenters already stretch each screen's image into its
 rectangle, so nothing else changes.
 
-It's proposed upstream as a setting any game with a widescreen code can
-use, in [fearkov/zakuro#19](https://github.com/fearkov/zakuro/pull/19).
-Until it's merged, `Cargo.toml` has a `[patch]` building Zakuro from the
-fork's `widescreen` branch; drop it once the setting is upstream.
+It was merged upstream in
+[fearkov/zakuro#19](https://github.com/fearkov/zakuro/pull/19), as a setting
+any game with a widescreen code can use. It isn't in a Zakuro release yet
+(the latest is v0.2.27), so this project builds against Zakuro's git main.
 
 ## Known limits
 
