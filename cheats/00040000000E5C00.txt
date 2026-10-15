@@ -24,4 +24,28 @@ D1000000 00000000
 
 [60 FPS]
 204E3BA0 00000000
-{by @lucky, via Reshiban/60FPS-AR-CHEATS-3DS}
+*by @lucky, via Reshiban/60FPS-AR-CHEATS-3DS
+
+[Macca x2]
+*Multiplies Macca gained (battles, shops, rewards). Needs the smt4-recomp build. Turn on only one Macca multiplier.
+204EFF00 00000002
+
+[Macca x3]
+*Multiplies Macca gained (battles, shops, rewards). Needs the smt4-recomp build. Turn on only one Macca multiplier.
+204EFF00 00000003
+
+[Macca x5]
+*Multiplies Macca gained (battles, shops, rewards). Needs the smt4-recomp build. Turn on only one Macca multiplier.
+204EFF00 00000005
+
+[EXP x2]
+*Multiplies the hero's EXP from battles. Needs the smt4-recomp build. Turn on only one EXP multiplier.
+204EFF01 00000002
+
+[EXP x3]
+*Multiplies the hero's EXP from battles. Needs the smt4-recomp build. Turn on only one EXP multiplier.
+204EFF01 00000003
+
+[EXP x5]
+*Multiplies the hero's EXP from battles. Needs the smt4-recomp build. Turn on only one EXP multiplier.
+204EFF01 00000005
