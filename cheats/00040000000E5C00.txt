@@ -38,16 +38,16 @@ D1000000 00000000
 *Multiplies Macca gained (battles, shops, rewards). Needs the smt4-recomp build. Turn on only one Macca multiplier.
 204EFF00 00000005
 
-[EXP x2]
-*Multiplies the hero's EXP from battles. Needs the smt4-recomp build. Turn on only one EXP multiplier.
+[Hero EXP x2]
+*Multiplies the hero's EXP from battles. Needs the smt4-recomp build. Turn on only one Hero EXP multiplier.
 204EFF01 00000002
 
-[EXP x3]
-*Multiplies the hero's EXP from battles. Needs the smt4-recomp build. Turn on only one EXP multiplier.
+[Hero EXP x3]
+*Multiplies the hero's EXP from battles. Needs the smt4-recomp build. Turn on only one Hero EXP multiplier.
 204EFF01 00000003
 
-[EXP x5]
-*Multiplies the hero's EXP from battles. Needs the smt4-recomp build. Turn on only one EXP multiplier.
+[Hero EXP x5]
+*Multiplies the hero's EXP from battles. Needs the smt4-recomp build. Turn on only one Hero EXP multiplier.
 204EFF01 00000005
 
 [App Points x2]
@@ -61,3 +61,15 @@ D1000000 00000000
 [App Points x5]
 *Multiplies App Points gained. Needs the smt4-recomp build. Turn on only one App Points multiplier.
 204EFF02 00000005
+
+[Demon EXP x2]
+*Multiplies the EXP demons get from battles (party and stock). Needs the smt4-recomp build. Turn on only one Demon EXP multiplier.
+204EFF03 00000002
+
+[Demon EXP x3]
+*Multiplies the EXP demons get from battles (party and stock). Needs the smt4-recomp build. Turn on only one Demon EXP multiplier.
+204EFF03 00000003
+
+[Demon EXP x5]
+*Multiplies the EXP demons get from battles (party and stock). Needs the smt4-recomp build. Turn on only one Demon EXP multiplier.
+204EFF03 00000005

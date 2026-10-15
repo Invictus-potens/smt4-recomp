@@ -3536,6 +3536,7 @@ dependencies = [
 name = "smt4"
 version = "0.1.0"
 dependencies = [
+ "log",
  "zakuro",
 ]
 

@@ -14,12 +14,22 @@
 - Boots to the title screen and in-game menus correctly over Vulkan.
   An earlier "blank screen" result was a screen-capture artifact in
   the tooling used to check it (Windows Graphics Capture not reading
-  the Vulkan mailbox-mode swapchain), not an emulation bug — confirmed
+  the Vulkan mailbox-mode swapchain), not an emulation bug. Confirmed
   by capturing a full desktop composite instead of the window alone.
 - Cheats: community Action Replay / Gateway codes for this title
   (`cheats/00040000000E5C00.txt`) load and toggle correctly in
-  Zakuro's built-in cheat UI. Not yet verified to write correct values
-  in an active save (needs a loaded game, not just the title screen).
+  Zakuro's built-in cheat UI. The community addresses for Macca
+  (`0x08291C8C`), hero EXP (`0x08291CC0`) and App Points (`0x0829B470`)
+  were confirmed in game.
+
+## Enhancements (2026-10-14)
+
+- **Multipliers** for Macca, hero EXP, demon EXP and App Points, x2/x3/x5,
+  switched on and off from Zakuro's cheat menu while playing. All four
+  tested in game. See [MULTIPLIERS.md](MULTIPLIERS.md).
+- **60 FPS** code by lucky, in the cheats file, and submitted to Zakuro's
+  built-in enhancements ([fearkov/zakuro#16](https://github.com/fearkov/zakuro/pull/16)).
+- Ideas not started yet: [ENHANCEMENTS.md](ENHANCEMENTS.md).
 
 ## Known issues / open questions
 
@@ -30,15 +40,15 @@
   3DS `srv` semantics for session handles). Whether the game is
   properly closing these handles, or this is a leak that would
   eventually exhaust handle space in a long session, is unconfirmed.
-  Not reported upstream — not enough evidence to be worth filing.
-- **Fatal crash after naming the character — FIXED upstream in Zakuro
+  Not reported upstream: not enough evidence to be worth filing.
+- **Fatal crash after naming the character: FIXED upstream in Zakuro
   v0.2.27** ([fearkov/zakuro#15](https://github.com/fearkov/zakuro/issues/15)).
   Root cause: `GetSemaphoreEventHandle` cached the kernel event handle
   it created and never reset that cache in `UNLOAD_COMPONENT`. The
   title closes its copy of that handle as part of shutting the DSP
   down for a scene transition (the usual `ndspExit`/`ndspInit`
   pattern), then asks for the handle again when it reloads the DSP
-  for the next scene — Zakuro handed back the same, now-closed handle
+  for the next scene, and Zakuro handed back the same, now-closed handle
   number instead of a fresh one, and the title's own `svcSignalEvent`
   on it failed as invalid (`0xD8E007F7`, kernel/invalid-handle,
   result desc 1015), reported as a fatal error at pc `0x0013A8D0`.
@@ -50,17 +60,14 @@
   caching one), landing within hours of the issue being filed.
   Confirmed the title continues past the crash point and into
   real gameplay with `smt4-recomp` rebuilt against v0.2.27.
-- Overrides directory is empty so far; nothing has needed a hand
-  fix yet.
+- Running from a save state, Zakuro's interpreter takes over for a while:
+  threads come back mid-function, where the linked code has no entry, so
+  hundreds of distinct spots run interpreted until execution reaches a
+  known entry. Harmless, but code hooked by an override doesn't run its
+  override until then.
 
 ## Next steps
 
-- Load an actual save or start a new game to confirm the cheats write
-  the expected memory values in practice.
-- Re-run `3dsrecomp build`/`port` with `--overrides overrides/` once
-  any fixes are written, to confirm the override mechanism works for
-  this title.
 - Watch handle counts over a longer play session to settle the
   `APT:U` question above.
-- Keep playing past where #15 used to block progress to find the next
-  issue, if any.
+- Keep playing to find the next issue, if any.
