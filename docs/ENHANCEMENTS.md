@@ -84,8 +84,10 @@ Possible additions, roughly by how useful they'd be:
   cheat-table thread (LuckyCross) made per-demon AR codes for Cheat
   Engine; porting the useful ones to the Gateway/AR text format Zakuro
   reads is mechanical but tedious (dozens of demons).
-- **60 FPS as a Zakuro "enhancement"**: submitted as
-  [fearkov/zakuro#16](https://github.com/fearkov/zakuro/pull/16) (rev0).
+- **60 FPS as a Zakuro "enhancement"**: merged as
+  [fearkov/zakuro#16](https://github.com/fearkov/zakuro/pull/16) (rev0). A
+  30 FPS one to undo it is proposed in
+  [fearkov/zakuro#18](https://github.com/fearkov/zakuro/pull/18).
 - **Widescreen override**, once/if solved per item 2, ships as code
   in `overrides/` instead of a cheat (it has to run every frame and
   touch floating point, which the AR cheat engine doesn't do).
