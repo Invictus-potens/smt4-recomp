@@ -13,3 +13,4 @@ code/
 
 # local scratch
 *.log
+/.build
