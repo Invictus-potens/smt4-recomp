@@ -178,7 +178,7 @@ fn run(what: &str, assets: &[&Asset], convert: impl Fn(&Asset) -> Result<(), Str
             eprintln!("  {}: {error}", asset.path);
         }
         let n = done.fetch_add(1, Ordering::Relaxed) + 1;
-        if n % step == 0 || n == assets.len() {
+        if n.is_multiple_of(step) || n == assets.len() {
             println!("  {n} of {}", assets.len());
         }
     });
