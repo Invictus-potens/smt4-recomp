@@ -1,79 +1,183 @@
-# smt4-recomp
+# Shin Megami Tensei IV for PC (smt4-recomp)
 
-A static recompilation project for *Shin Megami Tensei IV* (3DS, USA,
-title ID `00040000000E5C00`), built on top of
-[3dsrecomp](https://github.com/fearkov/3dsrecomp) and
-[Zakuro](https://github.com/fearkov/zakuro).
+**English** | [Português (Brasil)](README.pt-BR.md)
 
-This is **not** a decompilation. It does not reconstruct readable,
-matching source code. 3dsrecomp translates the game's compiled ARM11
-code directly into generated C ahead of time, which runs natively
-instead of being interpreted. This repository holds the glue around
-that process for this specific title: the standalone program project
-(from `3dsrecomp port`), hand-written overrides for functions that
-need fixing, community cheat codes, and build/progress notes.
+A native Windows build of *Shin Megami Tensei IV* (3DS, USA), made by static
+recompilation: [3dsrecomp](https://github.com/fearkov/3dsrecomp) translates
+the game's ARM code into C ahead of time, and that C is compiled into a
+program of its own, with [Zakuro](https://github.com/fearkov/zakuro) as the
+runtime for everything else (kernel, services, GPU, sound). The game's code
+runs natively, not through an emulator's interpreter or JIT.
 
-## What's here
+On top of that, this project adds widescreen, multipliers for Macca, EXP and
+App Points, frame rate options and cheats, all switched from the in-game
+cheat menu.
 
-- `Cargo.toml`, `build.rs`, `src/main.rs`: the standalone program
-  project `3dsrecomp port` generates, which links the recompiled code
-  against Zakuro as the runtime (kernel, services, GPU, sound).
-- `overrides/`: hand-written C functions that replace generated ones,
-  for fixes or mods. See [3dsrecomp's docs on overrides](
-  https://github.com/fearkov/3dsrecomp/blob/main/docs/overrides.md).
-  `multipliers.c` holds the Macca, hero EXP, demon EXP and App Points multipliers.
-- `scripts/patch_generated.py`: patches the generated C at the few spots
-  an override can't reach (they aren't function entries). Run after
-  every `port`.
-- `cheats/00040000000E5C00.txt`: Action Replay / Gateway codes in the
-  format Citra/Azahar/Zakuro read: community codes, plus the multiplier
-  switches (`Macca x2`, `Hero EXP x5`, `Demon EXP x3`, …) that only do something in this
-  build.
-- `docs/PROGRESS.md`: build status, code coverage, known issues.
-- `docs/MULTIPLIERS.md`: how the multipliers work and how each hook was
-  found.
-- `docs/WIDESCREEN.md`: the widescreen cheats, and the Zakuro setting they
-  need.
-- `docs/ENHANCEMENTS.md`: ideas: screens, widescreen, cheats.
+> **Beta.** Tested from a new game through the opening hours with no crash.
+> The rest of the game hasn't been played on it yet: please report what you
+> find in [Issues](../../issues).
 
-## What's NOT here, and never will be
+> **No game files or game code are included, and there is no download.** You
+> build it yourself from your own dump of the game. What the build makes
+> (`code/` and the program) holds the game's code: don't share it.
+> This project is not affiliated with Atlus, SEGA or Nintendo.
 
-- The ROM.
-- The generated C (`code/`, ~195 MiB, derived straight from the
-  copyrighted game binary).
-- Any compiled library or executable.
+## Contents
 
-You need your own legally dumped copy of the game to build anything in
-this repo. See [3dsrecomp's README](
-https://github.com/fearkov/3dsrecomp#readme) for how dumping and
-building work.
+- [Features](#features)
+- [Requirements](#requirements)
+- [Building](#building)
+- [Playing](#playing)
+- [Cheats and enhancements](#cheats-and-enhancements)
+- [Controls](#controls)
+- [Troubleshooting](#troubleshooting)
+- [How it works](#how-it-works)
+- [Credits](#credits)
+- [License](#license)
+
+## Features
+
+- **Native code**: the game's ARM code recompiled to C and compiled for the
+  PC (95% of it found ahead of time; anything left runs in Zakuro's
+  interpreter).
+- **Widescreen** 16:9 and 21:9: the game draws a wider 3D scene (more view
+  at the sides, same height), not a stretched picture.
+- **Multipliers** x2, x3 and x5 for Macca, hero EXP, demon EXP and App
+  Points, each picked from the cheat menu while playing.
+- **60 FPS** (the game runs twice as fast with it) and **30 FPS** to go back.
+- Community cheats: max Macca, App Points, items, hero EXP, HP/MP and stats.
+- Everything Zakuro has: Vulkan or OpenGL, screen layouts, scaling and
+  filters, save states, controllers, 3D.
+
+## Requirements
+
+- Windows 10 or 11, 64-bit. Linux should work too, but hasn't been tried.
+- A graphics card with Vulkan (or OpenGL 3.3).
+- **Your own decrypted dump** of *Shin Megami Tensei IV* (USA), title ID
+  `00040000000E5C00`, as `.3ds` or `.cci`.
+- About 10 GB of free disk space and 8 GB of RAM for the build.
+- To build:
+  - [Rust](https://rustup.rs) with the GNU toolchain:
+    `rustup default stable-x86_64-pc-windows-gnu`
+  - MinGW-w64 GCC, 64-bit: `winget install BrechtSanders.WinLibs.POSIX.UCRT`
+  - [git](https://git-scm.com) and [Python 3](https://www.python.org)
 
 ## Building
 
-You need Rust, a C compiler and `ar` (MinGW-w64's on Windows, matching
-whatever Rust toolchain you use; see `3dsrecomp port`'s docs for the
-Windows toolchain-matching caveat), and Python 3.
-
 ```
-3dsrecomp port <path to your rom> <scratch dir> --name smt4 --overrides overrides/
-# move <scratch dir>/code here, replacing code/
-python scripts/patch_generated.py --rebuild
-cargo build --release
-target/release/smt4 <path to your rom>
+git clone https://github.com/Invictus-potens/smt4-recomp
+cd smt4-recomp
+python build.py "C:\path\to\Shin Megami Tensei IV (USA).3ds"
 ```
 
-Port into a scratch directory and keep only its `code/`: `port` also
-writes its own `Cargo.toml` and `src/main.rs`, which would drop this
-project's (`main.rs` defines `smt4_log_override`, which the overrides
-call). `code/` is kept out of version control by `.gitignore`. Redo these
-steps whenever you pull changes to `overrides/` or
-`scripts/patch_generated.py`.
+`build.py` checks your tools and ROM, fetches and builds 3dsrecomp at the
+version this project was tested with, recompiles the game's code with this
+project's changes, builds the program and copies the cheats to Zakuro's
+cheats folder. The recompilation takes **20 minutes or more**; add
+`--low-priority` to keep using the PC meanwhile. Running it again later only
+redoes what changed. `python build.py --help` lists the options.
 
-Copy `cheats/00040000000E5C00.txt` to `%APPDATA%\zakuro\cheats\` (or the
-equivalent on your system) to get the cheats, multipliers included, in
-Zakuro's cheat menu. Set `SMT4_HOOK_LOG` to a file path to have every
-multiplied gain written to it.
+When it's done, the program is `target\release\smt4.exe`.
 
-## Status
+## Playing
 
-See [docs/PROGRESS.md](docs/PROGRESS.md).
+```
+target\release\smt4.exe "C:\path\to\Shin Megami Tensei IV (USA).3ds"
+```
+
+It reads the game's files and everything but the code from your dump, so
+keep the ROM where it is. Saves, save states and settings go in Zakuro's
+folder, `%APPDATA%\zakuro`.
+
+Recommended setup (Escape opens the menu):
+
+1. **Settings**, Layout: **Top screen only**. F10 switches to the bottom
+   screen and back, for the map and menus.
+2. **Settings**, Top screen shape: **16:9** (or 21:9 on an ultrawide).
+3. **Cheats**: turn on **Widescreen 16:9** (the same shape), then go to
+   another area so the game sets its camera again.
+
+## Cheats and enhancements
+
+Escape, then **Cheats**. The ones marked *smt4-recomp* only work in this
+build; the others are standard Action Replay codes.
+
+| Cheat | What it does |
+|---|---|
+| Widescreen 16:9 / 21:9 *(smt4-recomp)* | Wider 3D scene. Needs Top screen shape set to the same, and shows at the next area change. |
+| Macca x2 / x3 / x5 *(smt4-recomp)* | Multiplies Macca from battles, shops and rewards. Shops show the normal price; the money you get is multiplied. |
+| Hero EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplies the hero's EXP from battles. |
+| Demon EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplies the EXP demons get (party and stock). |
+| App Points x2 / x3 / x5 *(smt4-recomp)* | Multiplies App Points. |
+| 60 FPS | The game logic is tied to the frame rate, so everything runs **twice as fast**. Turning it off does **not** bring the normal speed back: use 30 FPS for that. |
+| 30 FPS (normal speed) | The game's default; undoes 60 FPS. |
+| Max Macca, 9999 App points, All items, Hero Max Exp, Hero HP/MP, Hero Stats | Community codes. |
+
+Turn on only one of each multiplier. Turning a multiplier or widescreen
+cheat off goes back to normal on its own.
+
+How they work: [MULTIPLIERS.md](docs/MULTIPLIERS.md),
+[WIDESCREEN.md](docs/WIDESCREEN.md).
+
+## Controls
+
+Keyboard defaults, all changeable in Settings. Controllers work too.
+
+| 3DS | Key | | Zakuro | Key |
+|---|---|---|---|---|
+| A / B | X / Z | | Menu | Escape |
+| X / Y | S / A | | Pause | F1 |
+| L / R | Q / W | | Save / load state | F5 / F8 |
+| ZL / ZR | 1 / 2 | | Next layout | F9 |
+| Start / Select | Enter / Backspace | | Top / bottom screen | F10 |
+| D-pad | Arrow keys | | Full screen | F11 |
+| Circle Pad | I J K L | | Fast forward | hold Tab |
+| C-Stick | T F G H | | Touch screen | mouse |
+
+## Troubleshooting
+
+- **"gcc builds for mingw32, not 64-bit"**: an old 32-bit MinGW comes first
+  on your PATH. Set `CC` and `AR` to the full paths of the 64-bit `gcc.exe`
+  and `ar.exe`.
+- **"Rust uses the MSVC toolchain"**, or errors about `link.exe`: run
+  `rustup default stable-x86_64-pc-windows-gnu`.
+- **"is title ..., this project is for Shin Megami Tensei IV (USA)"**: only
+  the USA release is supported; the code differs between regions.
+- **The game runs twice as fast**: 60 FPS was on at some point. Turn on
+  **30 FPS (normal speed)**, then save a state again.
+- **The picture is squeezed or stretched**: the Widescreen cheat and the Top
+  screen shape setting have to match, or both be off.
+
+## How it works
+
+| Part | Where | What it does |
+|---|---|---|
+| Build script | `build.py` | Runs every step below, from your ROM to the program |
+| Recompiler | [3dsrecomp](https://github.com/fearkov/3dsrecomp) | Finds the game's functions and writes them as C, into `code/` (not in this repo) |
+| Overrides | `overrides/` | Functions written by hand that replace generated ones: the Macca and App Points multipliers, widescreen |
+| Patches | `scripts/patch_generated.py` | Changes the generated C where an override can't reach (hero and demon EXP, the projection) |
+| Program | `Cargo.toml`, `build.rs`, `src/main.rs` | Links the compiled code with Zakuro |
+| Runtime | [Zakuro](https://github.com/fearkov/zakuro) | 3DS kernel, services, GPU and sound |
+| Cheats | `cheats/00040000000E5C00.txt` | Codes for Zakuro's cheat menu; the *smt4-recomp* ones write a control byte the overrides read |
+
+This is static recompilation, not a decompilation: there is no readable
+source code of the game here or anywhere in the build. Set `SMT4_HOOK_LOG`
+to a file path to have every multiplied gain written to it.
+
+More: [progress and known issues](docs/PROGRESS.md),
+[enhancements and roadmap](docs/ENHANCEMENTS.md).
+
+## Credits
+
+- **fearkov**: [3dsrecomp](https://github.com/fearkov/3dsrecomp) and
+  [Zakuro](https://github.com/fearkov/zakuro), which do the heavy lifting.
+- **lucky**: the 60 FPS and 30 FPS codes, from
+  [Reshiban/60FPS-AR-CHEATS-3DS](https://github.com/Reshiban/60FPS-AR-CHEATS-3DS).
+- **JourneyOver** and the codes' original authors: the community cheats,
+  from [JourneyOver/CTRPF-AR-CHEAT-CODES](https://github.com/JourneyOver/CTRPF-AR-CHEAT-CODES).
+- *Shin Megami Tensei IV* is by Atlus.
+
+## License
+
+[MIT](LICENSE), for the files in this repository only. It doesn't cover the
+game or anything built from it.
