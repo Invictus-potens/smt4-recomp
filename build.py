@@ -205,9 +205,15 @@ def lower_priority() -> None:
     """the compilers started from here inherit it"""
     if os.name == 'nt':
         import ctypes
+        from ctypes import wintypes
         below_normal = 0x4000
-        kernel32 = ctypes.windll.kernel32
-        kernel32.SetPriorityClass(kernel32.GetCurrentProcess(), below_normal)
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+        # a HANDLE is 64 bits: without these, ctypes cuts it to an int
+        kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+        kernel32.SetPriorityClass.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+        kernel32.SetPriorityClass.restype = wintypes.BOOL
+        if not kernel32.SetPriorityClass(kernel32.GetCurrentProcess(), below_normal):
+            print(f'could not lower the priority (error {ctypes.get_last_error()})')
     else:
         os.nice(10)
 
