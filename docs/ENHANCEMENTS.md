@@ -77,7 +77,7 @@ which Zakuro reads natively):
 
 - Max Macca, 9999 App Points, All Items
 - Hero Max Exp, HP/MP, Stats
-- **60 FPS** (single write at `204E3BA0`, by lucky)
+- **60 FPS** and **30 FPS** (by lucky): were cheats here, now built into Zakuro as enhancements
 - **Macca / Hero EXP / Demon EXP / App Points x2, x3, x5**: these switch overrides in this
   build on and off rather than writing game values. Done, see
   [MULTIPLIERS.md](MULTIPLIERS.md).

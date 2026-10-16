@@ -73,7 +73,8 @@ python build.py "C:\path\to\Shin Megami Tensei IV (USA).3ds"
 `build.py` checks your tools and ROM, fetches and builds 3dsrecomp at the
 version this project was tested with, recompiles the game's code with this
 project's changes, builds the program and copies the cheats to Zakuro's
-cheats folder. The recompilation takes **20 minutes or more**; add
+cheats folder (adding the missing ones to a cheats file already there,
+without touching the rest). The recompilation takes **20 minutes or more**; add
 `--low-priority` to keep using the PC meanwhile. Running it again later only
 redoes what changed. `python build.py --help` lists the options.
 
@@ -100,7 +101,8 @@ Recommended setup (Escape opens the menu):
 ## Cheats and enhancements
 
 Escape, then **Cheats**. The ones marked *smt4-recomp* only work in this
-build; the others are standard Action Replay codes.
+build; *Enhancements* are built into Zakuro, at the top of the window; the
+others are standard Action Replay codes.
 
 | Cheat | What it does |
 |---|---|
@@ -109,8 +111,8 @@ build; the others are standard Action Replay codes.
 | Hero EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplies the hero's EXP from battles. |
 | Demon EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplies the EXP demons get (party and stock). |
 | App Points x2 / x3 / x5 *(smt4-recomp)* | Multiplies App Points. |
-| 60 FPS | The game logic is tied to the frame rate, so everything runs **twice as fast**. Turning it off does **not** bring the normal speed back: use 30 FPS for that. |
-| 30 FPS (normal speed) | The game's default; undoes 60 FPS. |
+| 60 FPS *(Enhancements)* | The game logic is tied to the frame rate, so everything runs **twice as fast**. Turning it off does **not** bring the normal speed back: use 30 FPS for that. |
+| 30 FPS *(Enhancements)* | The game's default; undoes 60 FPS. |
 | Max Macca, 9999 App points, All items, Hero Max Exp, Hero HP/MP, Hero Stats | Community codes. |
 
 Turn on only one of each multiplier. Turning a multiplier or widescreen
@@ -144,7 +146,7 @@ Keyboard defaults, all changeable in Settings. Controllers work too.
 - **"is title ..., this project is for Shin Megami Tensei IV (USA)"**: only
   the USA release is supported; the code differs between regions.
 - **The game runs twice as fast**: 60 FPS was on at some point. Turn on
-  **30 FPS (normal speed)**, then save a state again.
+  **30 FPS** (Enhancements), then save a state again.
 - **The picture is squeezed or stretched**: the Widescreen cheat and the Top
   screen shape setting have to match, or both be off.
 

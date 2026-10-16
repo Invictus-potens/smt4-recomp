@@ -14,3 +14,4 @@ code/
 # local scratch
 *.log
 /.build
+__pycache__/

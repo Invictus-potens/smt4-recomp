@@ -184,21 +184,47 @@ def zakuro_dir() -> pathlib.Path:
     return pathlib.Path(os.environ.get('XDG_DATA_HOME', pathlib.Path.home() / '.local' / 'share')) / 'zakuro'
 
 
+def cheat_blocks(text: str) -> dict:
+    """the cheats in a cheats file, by name, each with its lines"""
+    blocks, name = {}, None
+    for line in text.splitlines():
+        if line.startswith('[') and line.rstrip().endswith(']'):
+            name = line.strip()
+            blocks[name] = [line]
+        elif name is not None:
+            blocks[name].append(line)
+    return {name: lines for name, lines in blocks.items()}
+
+
 def install_cheats() -> None:
     step('7. cheats')
     name = f'{TITLE_ID:016X}.txt'
     source = ROOT / 'cheats' / name
     target = zakuro_dir() / 'cheats' / name
     target.parent.mkdir(parents=True, exist_ok=True)
-    if target.is_file():
-        if target.read_bytes() == source.read_bytes():
-            print(f'{target} is up to date')
-            return
-        backup = target.with_suffix('.txt.bak')
-        shutil.copy2(target, backup)
-        print(f'backed up the cheats file that was there to {backup}')
-    shutil.copy2(source, target)
-    print(f'copied to {target}')
+    ours = cheat_blocks(source.read_text(encoding='utf-8'))
+    if not target.is_file():
+        shutil.copy2(source, target)
+        print(f'copied {len(ours)} cheats to {target}')
+        return
+    # Zakuro keeps which cheats are on in this same file, so the cheats
+    # already there are left as they are, and only missing ones are added
+    text = target.read_text(encoding='utf-8')
+    theirs = cheat_blocks(text)
+    missing = [lines for cheat, lines in ours.items() if cheat not in theirs]
+    if not missing:
+        print(f'{target} already has all {len(ours)} cheats')
+        return
+    newline = '\r\n' if '\r\n' in text else '\n'
+    lines = text.splitlines()
+    while lines and not lines[-1].strip():
+        lines.pop()
+    for block in missing:
+        while block and not block[-1].strip():
+            block = block[:-1]
+        lines += [''] + block
+    target.write_bytes((newline.join(lines) + newline).encode('utf-8'))
+    print(f'added {len(missing)} cheats to {target}, leaving the {len(theirs)} already there as they were')
 
 
 def lower_priority() -> None:

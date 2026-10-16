@@ -27,12 +27,12 @@
 - **Multipliers** for Macca, hero EXP, demon EXP and App Points, x2/x3/x5,
   switched on and off from Zakuro's cheat menu while playing. All four
   tested in game. See [MULTIPLIERS.md](MULTIPLIERS.md).
-- **60 FPS** code by lucky, in the cheats file, and in Zakuro's built-in
+- **60 FPS** code by lucky, now in Zakuro's built-in
   enhancements ([fearkov/zakuro#16](https://github.com/fearkov/zakuro/pull/16),
   merged). It makes the whole game run twice as fast, and turning it off
   doesn't bring the normal speed back: the code's 0 stays at `0x004E3BA0`
   (the game's value is 1), and a state saved meanwhile keeps it. The
-  `30 FPS (normal speed)` cheat writes the 1 back. Reported upstream as
+  `30 FPS` enhancement writes the 1 back. Reported upstream as
   [fearkov/zakuro#17](https://github.com/fearkov/zakuro/issues/17), with
   the same 30 FPS code added to the enhancements in
   [fearkov/zakuro#18](https://github.com/fearkov/zakuro/pull/18) (merged).
