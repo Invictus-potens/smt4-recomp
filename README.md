@@ -30,6 +30,7 @@ cheat menu.
 - [Playing](#playing)
 - [Cheats and enhancements](#cheats-and-enhancements)
 - [Controls](#controls)
+- [Extracting assets](#extracting-assets)
 - [Troubleshooting](#troubleshooting)
 - [How it works](#how-it-works)
 - [Credits](#credits)
@@ -136,6 +137,22 @@ Keyboard defaults, all changeable in Settings. Controllers work too.
 | Circle Pad | I J K L | | Fast forward | hold Tab |
 | C-Stick | T F G H | | Touch screen | mouse |
 
+## Extracting assets
+
+`tools/extract` pulls the game's files out of your ROM and converts them:
+textures to PNG, models to plain CGFX (for SPICA, Ohana3DS or Noesis), text
+to UTF-8, music, sounds and voices to WAV, cutscenes to MP4.
+
+```
+cd tools\extract
+cargo build --release
+target\release\smt4-extract "C:\path\to\Shin Megami Tensei IV (USA).3ds" C:\smt4-assets
+```
+
+The formats, what's converted and what isn't, and how to put changed files
+back as a mod: [ASSETS.md](docs/ASSETS.md). Like the build, what it writes is
+the game's: don't share it.
+
 ## Troubleshooting
 
 - **"gcc builds for mingw32, not 64-bit"**: an old 32-bit MinGW comes first
@@ -160,6 +177,7 @@ Keyboard defaults, all changeable in Settings. Controllers work too.
 | Patches | `scripts/patch_generated.py` | Changes the generated C where an override can't reach (hero and demon EXP, the projection) |
 | Program | `Cargo.toml`, `build.rs`, `src/main.rs` | Links the compiled code with Zakuro |
 | Runtime | [Zakuro](https://github.com/fearkov/zakuro) | 3DS kernel, services, GPU and sound |
+| Asset extractor | `tools/extract/` | Pulls the game's files out of the ROM and converts them, see [ASSETS.md](docs/ASSETS.md) |
 | Cheats | `cheats/00040000000E5C00.txt` | Codes for Zakuro's cheat menu; the *smt4-recomp* ones write a control byte the overrides read |
 
 This is static recompilation, not a decompilation: there is no readable

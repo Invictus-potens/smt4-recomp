@@ -1,0 +1,21 @@
+[package]
+name = "smt4-extract"
+version = "0.1.0"
+edition = "2021"
+description = "Extracts and converts Shin Megami Tensei IV's assets from your own ROM"
+license = "MIT"
+publish = false
+
+[dependencies]
+# the same RomFS reader and texture decoder Zakuro runs the game with
+zakuro-fs = { git = "https://github.com/fearkov/zakuro" }
+zakuro-gpu = { git = "https://github.com/fearkov/zakuro", default-features = false }
+png = "0.18"
+rayon = "1"
+encoding_rs = "0.8"
+
+[profile.release]
+debug = false
+
+# a project of its own, separate from the game's
+[workspace]
