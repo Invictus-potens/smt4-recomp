@@ -85,6 +85,13 @@ def check_tools() -> dict:
         fail('Rust uses the MSVC toolchain, but the C side is built with MinGW-w64 here. Run '
              '"rustup default stable-x86_64-pc-windows-gnu" and try again')
     env = dict(os.environ, CC=cc, AR=ar)
+    # 3dsrecomp's rust-toolchain.toml asks for "stable", which on Windows
+    # means the MSVC one even when the GNU one is the default: build it with
+    # the same toolchain as this project
+    toolchain = output(['rustup', 'show', 'active-toolchain']).split(' ')[0] if shutil.which('rustup') else ''
+    if toolchain:
+        env['RUSTUP_TOOLCHAIN'] = toolchain
+        print(f'Rust toolchain: {toolchain}')
     return env
 
 
