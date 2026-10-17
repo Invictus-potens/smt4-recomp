@@ -36,7 +36,7 @@ and video a few minutes.
 | Folder | From | Count | Format | Size |
 |---|---|---|---|---|
 | `romfs/` | every file in the RomFS | 20,126 | as they are | 1.8 GB |
-| `textures/` | `.stex`, `.cmp` | 3,421 | PNG | 210 MB |
+| `textures/` | `.stex`, `.cmp` | 3,421 | PNG, plus `pack-names.txt` | 210 MB |
 | `models/` | `.bam`, `.bcmdl` | 850 | CGFX (`.bcres`) | 480 MB |
 | `text/` | `.mbm` | 1,170 | UTF-8 text | 5 MB |
 | `audio/` | `.bcstm` (music), `.bcwav` (sounds, voices) | 368 + 8,038 | WAV | 3.7 GB |
@@ -126,15 +126,20 @@ Mobiclip video, used for the animated cutscenes. They're all stereoscopic
 | `.tga` | Small textures | Plain TGA, already readable. |
 | `.earg`, `.ttd`, `.bcenv`, `.bccam`, `.bcanim` | Effect arguments, camera, lights, animations | `.bc*` are CGFX parts. |
 
+A `.cmp` texture is written as `<name>.cmp.png`, as a few sit next to an
+`.stex` of the same name.
+
+`textures/pack-names.txt` lists, for each extracted PNG, the name a texture
+pack picture needs to take its place in Zakuro (or Citra, Azahar):
+`tex1_<width>x<height>_<hash>_<format>_mip0.png`, the hash taken with
+Zakuro's own code over the texture as the game hands it to the GPU.
+
 ## Putting assets back: mods
 
-Zakuro, and so this program, loads mods the way Luma3DS and Azahar do, from
-`%APPDATA%\zakuro\mods\00040000000E5C00\`:
+Replacing images with texture packs, and `scripts/fit_texture.py`, which
+makes and installs a picture for one: [MODDING.md](MODDING.md).
 
-- `romfs/` with files at their RomFS paths replaces the game's own (a
-  translated `.mbm`, an edited `.stex`, a new model);
-- `textures/` takes Citra/Azahar texture packs (PNGs replacing textures by
-  hash), the usual way to put in upscaled textures.
-
-Writing files back in the game's formats (a PNG back to `.stex`, text back to
-`.mbm`) isn't done yet.
+Zakuro also takes files that replace the game's own at their RomFS paths, in
+`%APPDATA%\zakuro\mods\00040000000E5C00\romfs\` (a translated `.mbm`, a new
+model), but writing files back in the game's formats (text back to `.mbm`,
+a PNG back to `.stex`) isn't done yet.

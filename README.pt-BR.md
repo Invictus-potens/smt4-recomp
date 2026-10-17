@@ -150,9 +150,20 @@ cargo build --release
 target\release\smt4-extract "C:\caminho\para\Shin Megami Tensei IV (USA).3ds" C:\smt4-assets
 ```
 
-Os formatos, o que é convertido e o que não é, e como colocar arquivos
-alterados de volta como mod (em inglês): [ASSETS.md](docs/ASSETS.md). Como na
-compilação, o que ele gera é do jogo: não compartilhe.
+Os formatos, o que é convertido e o que não é (em inglês):
+[ASSETS.md](docs/ASSETS.md). Como na compilação, o que ele gera é do jogo: não
+compartilhe.
+
+Para trocar uma imagem do jogo por uma sua (um retrato, um ícone, um fundo),
+na mesma resolução ou maior:
+
+```
+python scripts\fit_texture.py <assets>\textures\tex\stex\stbustup\st_bu_pc001.png minha_imagem.png
+```
+
+Ele encaixa a sua imagem onde fica o personagem da original e instala como
+texture pack; reabra o jogo para ver. Passo a passo, e o que fazer quando a
+imagem não muda (em inglês): [MODDING.md](docs/MODDING.md).
 
 ## Problemas comuns
 
@@ -178,6 +189,7 @@ compilação, o que ele gera é do jogo: não compartilhe.
 | Patches | `scripts/patch_generated.py` | Altera o C gerado onde um override não alcança (EXP do herói e dos demônios, a projeção) |
 | Programa | `Cargo.toml`, `build.rs`, `src/main.rs` | Junta o código compilado com o Zakuro |
 | Runtime | [Zakuro](https://github.com/fearkov/zakuro) | Kernel, serviços, GPU e som do 3DS |
+| Mods de imagem | `scripts/fit_texture.py` | Cria e instala uma imagem de texture pack, veja [MODDING.md](docs/MODDING.md) |
 | Extrator de assets | `tools/extract/` | Tira os arquivos do jogo da ROM e converte, veja [ASSETS.md](docs/ASSETS.md) |
 | Cheats | `cheats/00040000000E5C00.txt` | Códigos do menu de cheats; os *smt4-recomp* escrevem um byte de controle que os overrides leem |
 

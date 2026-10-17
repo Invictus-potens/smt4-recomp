@@ -24,6 +24,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use rayon::prelude::*;
 use zakuro_fs::romfs::{FileEntry, RomFs};
 use zakuro_fs::Title;
+use zakuro_gpu::pack::{hash, Hashing};
 use zakuro_gpu::texture::{sample_texel, TextureFormat};
 
 const TITLE_ID: u64 = 0x0004_0000_000E_5C00;
@@ -99,14 +100,28 @@ fn main() -> ExitCode {
         });
     }
     if only.contains("textures") {
+        let names = std::sync::Mutex::new(Vec::new());
         failed += run("textures", &with_ext(&[".stex", ".cmp"]), |asset| {
             let data = read(asset);
             let stex = if data.first() == Some(&0x11) { lz11(&data)? } else { data };
-            let png = stex_to_png(&stex)?;
+            let texture = parse_stex(&stex)?;
             // a few .cmp files sit next to an .stex of the same name
             let ext = if asset.path.to_ascii_lowercase().ends_with(".cmp") { "cmp.png" } else { "png" };
-            write(&out.join("textures").join(&asset.path).with_extension(ext), &png)
+            let png = asset.path.rsplit_once('.').map_or(asset.path.clone(), |(stem, _)| format!("{stem}.{ext}"));
+            names.lock().unwrap().push(format!("{png}\t{}", texture.pack_name()));
+            write(&out.join("textures").join(&png), &texture.png()?)
         });
+        let mut names = names.into_inner().unwrap();
+        names.sort();
+        let list = format!(
+            "# the name a texture pack picture needs to take each texture's place, by\n\
+             # the PNG it was extracted to. Put the picture, under that name, in\n\
+             # %APPDATA%\\zakuro\\mods\\{TITLE_ID:016X}\\textures\\. See docs/ASSETS.md.\n{}\n",
+            names.join("\n")
+        );
+        if let Err(error) = write(&out.join("textures").join("pack-names.txt"), list.as_bytes()) {
+            eprintln!("  {error}");
+        }
     }
     if only.contains("models") {
         failed += run("models", &with_ext(&[".bam", ".bcmdl"]), |asset| {
@@ -285,38 +300,67 @@ fn lz11(data: &[u8]) -> Result<Vec<u8>, String> {
     Ok(out)
 }
 
+/// a texture read from an STEX file
+struct Texture<'a> {
+    width: u32,
+    height: u32,
+    format: TextureFormat,
+    /// the texels in the PICA200's own tiled layout, as the game hands them
+    /// to the GPU
+    data: &'a [u8],
+}
+
 /// Atlus's STEX texture: "STEX", 0, the GL target, width, height, GL type,
 /// GL format, data size, data offset, then the texture in the PICA200's own
 /// tiled layout, which Zakuro decodes.
-fn stex_to_png(stex: &[u8]) -> Result<Vec<u8>, String> {
+fn parse_stex(stex: &[u8]) -> Result<Texture<'_>, String> {
     if stex.get(0..4) != Some(b"STEX") {
         return Err("not an STEX texture".into());
     }
     let field = |i: usize| u32_at(stex, i * 4).ok_or("header too short");
     let (width, height, gl_type, gl_format, offset) = (field(3)?, field(4)?, field(5)?, field(6)?, field(8)?);
     let format = texture_format(gl_type, gl_format).ok_or(format!("unknown format {gl_format:#X}/{gl_type:#X}"))?;
-    // the size in the header is sometimes bigger than the data (the space
-    // set aside for it, it seems), so it's worked out from the format
-    let needed = (width as u64 * height as u64 * format.bits_per_pixel() as u64 / 8) as u32;
-    let data = stex.get(offset as usize..(offset + needed) as usize).ok_or("data past the end")?;
     if width == 0 || height == 0 || !width.is_multiple_of(8) || !height.is_multiple_of(8) {
         return Err(format!("odd size {width}x{height}"));
     }
-    let mut pixels = Vec::with_capacity((width * height * 4) as usize);
-    for y in 0..height {
-        for x in 0..width {
-            pixels.extend_from_slice(&sample_texel(data, format, width, x, y));
+    // the size in the header is sometimes bigger than the data (the space
+    // set aside for it, it seems), so it's worked out from the format
+    let needed = (width as u64 * height as u64 * format.bits_per_pixel() as u64 / 8) as usize;
+    let data = stex.get(offset as usize..offset as usize + needed).ok_or("data past the end")?;
+    Ok(Texture { width, height, format, data })
+}
+
+impl Texture<'_> {
+    /// the texture as a PNG, rows from the top
+    fn png(&self) -> Result<Vec<u8>, String> {
+        let (width, height) = (self.width, self.height);
+        let mut pixels = Vec::with_capacity((width * height * 4) as usize);
+        for y in 0..height {
+            for x in 0..width {
+                pixels.extend_from_slice(&sample_texel(self.data, self.format, width, x, y));
+            }
         }
+        let mut png_bytes = Vec::new();
+        {
+            let mut encoder = png::Encoder::new(&mut png_bytes, width, height);
+            encoder.set_color(png::ColorType::Rgba);
+            encoder.set_depth(png::BitDepth::Eight);
+            let mut writer = encoder.write_header().map_err(|e| e.to_string())?;
+            writer.write_image_data(&pixels).map_err(|e| e.to_string())?;
+        }
+        Ok(png_bytes)
     }
-    let mut png_bytes = Vec::new();
-    {
-        let mut encoder = png::Encoder::new(&mut png_bytes, width, height);
-        encoder.set_color(png::ColorType::Rgba);
-        encoder.set_depth(png::BitDepth::Eight);
-        let mut writer = encoder.write_header().map_err(|e| e.to_string())?;
-        writer.write_image_data(&pixels).map_err(|e| e.to_string())?;
+
+    /// the name a texture pack picture needs to take this texture's place,
+    /// the way Zakuro and Citra name them in a pack without a pack.json:
+    /// tex1_<width>x<height>_<hash>_<format>_mip0.png, the hash taken by
+    /// Zakuro's own code
+    fn pack_name(&self) -> String {
+        let mut rows = Vec::new();
+        let hash = hash(Hashing::Rows, self.data, self.format, self.width, self.height, &mut rows).unwrap_or(0);
+        let number = (0..14).find(|&n| TextureFormat::from_raw(n) == self.format).unwrap_or(0);
+        format!("tex1_{}x{}_{hash:016X}_{number}_mip0.png", self.width, self.height)
     }
-    Ok(png_bytes)
 }
 
 /// the PICA200 format for a GL type and format pair, as the CTR SDK's GL
