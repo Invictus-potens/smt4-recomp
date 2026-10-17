@@ -97,11 +97,23 @@ loads; ones it renders on the fly (some effects, composed screens) can't be.
 **Draw the 3D on the GPU is off**, or the picture's name or proportions are
 wrong: Zakuro's log says when it can't read a picture.
 
+**Zakuro fell back to drawing in software.** Texture packs need the GPU, and
+when Vulkan can't start, Zakuro draws in software and leaves the pack out.
+`%APPDATA%\zakuro\zakuro.log` then says `Unable to find a Vulkan driver` and
+`the texture pack ... needs the 3D drawn on the GPU, it is left out`. One
+cause seen: another program's installer removed the NVIDIA driver's
+`VulkanDriverName` from the registry (Windows' `vulkaninfo --summary` says
+`Found no drivers!`), which breaks every Vulkan program on the PC.
+Reinstalling the graphics driver brings it back; until then, setting
+`VK_DRIVER_FILES` to the driver's `nv-vk64.json` (in
+`C:\Windows\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_*\`) gets
+Vulkan going for one launch.
+
 ## Known textures of the hero
 
 | Texture | Size | Where | Pack name |
 |---|---|---|---|
-| `stbustup/st_bu_pc001` | 256x256 | status screen, battle | `tex1_256x256_BDB0F2728E5BE035_13_mip0.png` |
+| `stbustup/st_bu_pc001` | 256x256 | status screen, battle (his card in the party row) | `tex1_256x256_BDB0F2728E5BE035_13_mip0.png` |
 | `faceiconall/icon_pc001` | 32x16 | party bar | `tex1_32x16_762B725D4DD8528B_2_mip0.png` |
 | `BUSTUPCHAR/BU3D_01_01_01_01` | 512x512 | not seen yet | `tex1_512x512_BA459DED618AE347_0_mip0.png` |
 | `status/st_dot_pc001` | 64x128 | not seen yet | `tex1_64x128_D14064F509C9997B_2_mip0.png` |
