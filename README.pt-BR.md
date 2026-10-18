@@ -13,7 +13,7 @@ Além disso, o projeto adiciona widescreen, multiplicadores de Macca, EXP e
 App Points, opções de frame rate e cheats, tudo ligado pelo menu de cheats
 dentro do jogo.
 
-> **Beta.** Testado de um jogo novo até as primeiras horas, sem travamentos.
+> **Beta.** Jogado de um jogo novo por mais de 6 horas, sem travamentos.
 > O resto do jogo ainda não foi jogado nele: relate o que encontrar em
 > [Issues](../../issues).
 
