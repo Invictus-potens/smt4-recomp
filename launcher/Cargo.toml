@@ -1,0 +1,20 @@
+[package]
+name = "smt4-launcher"
+version = "0.1.0"
+edition = "2021"
+description = "Launcher for smt4-recomp: pick your ROM, build the game, play"
+license = "MIT"
+publish = false
+
+[dependencies]
+eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "persistence"] }
+rfd = "0.17"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = "s"
+strip = true
+
+# a project of its own, separate from the game's
+[workspace]

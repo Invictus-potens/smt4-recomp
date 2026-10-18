@@ -68,6 +68,23 @@ dentro do jogo.
 
 ## Compilando
 
+### Com o launcher
+
+O `launcher/` é um programa pequeno que faz tudo por uma janela: escolha a
+pasta com o seu jogo (ele acha a ROM nela), veja quais ferramentas faltam e
+instale pelo winget, baixe ou atualize este projeto, compile o jogo com uma
+barra de progresso e jogue.
+
+```
+cd launcher
+cargo build --release
+target\release\smt4-launcher.exe
+```
+
+Ele não contém código do jogo, então pode ser compartilhado.
+
+### Pela linha de comando
+
 ```
 git clone https://github.com/Invictus-potens/smt4-recomp
 cd smt4-recomp
@@ -186,6 +203,7 @@ imagem não muda (em inglês): [MODDING.md](docs/MODDING.md).
 
 | Parte | Onde | O que faz |
 |---|---|---|
+| Launcher | `launcher/` | Uma janela em volta do `build.py`: acha a ROM, confere as ferramentas, compila, abre o jogo |
 | Script de build | `build.py` | Roda todos os passos abaixo, da ROM ao programa |
 | Recompilador | [3dsrecomp](https://github.com/fearkov/3dsrecomp) | Encontra as funções do jogo e as escreve em C, em `code/` (fora do repositório) |
 | Overrides | `overrides/` | Funções escritas à mão que substituem as geradas: multiplicadores de Macca e App Points, widescreen |

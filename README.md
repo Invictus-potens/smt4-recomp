@@ -67,6 +67,23 @@ cheat menu.
 
 ## Building
 
+### With the launcher
+
+`launcher/` is a small program that does it all from a window: choose the
+folder with your game (it finds the ROM in it), see which tools are missing
+and install them with winget, download or update this project, build the game
+with a progress bar, and play.
+
+```
+cd launcher
+cargo build --release
+target\release\smt4-launcher.exe
+```
+
+It holds no game code, so it can be shared.
+
+### From the command line
+
 ```
 git clone https://github.com/Invictus-potens/smt4-recomp
 cd smt4-recomp
@@ -184,6 +201,7 @@ an image doesn't change: [MODDING.md](docs/MODDING.md).
 
 | Part | Where | What it does |
 |---|---|---|
+| Launcher | `launcher/` | A window around `build.py`: finds the ROM, checks the tools, builds, plays |
 | Build script | `build.py` | Runs every step below, from your ROM to the program |
 | Recompiler | [3dsrecomp](https://github.com/fearkov/3dsrecomp) | Finds the game's functions and writes them as C, into `code/` (not in this repo) |
 | Overrides | `overrides/` | Functions written by hand that replace generated ones: the Macca and App Points multipliers, widescreen |

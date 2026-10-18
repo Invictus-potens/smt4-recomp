@@ -16,3 +16,4 @@ code/
 /.build
 __pycache__/
 /tools/extract/target
+/launcher/target
