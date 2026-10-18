@@ -45,6 +45,8 @@ dentro do jogo.
   visão nas laterais, mesma altura), não uma imagem esticada.
 - **Multiplicadores** x2, x3 e x5 de Macca, EXP do herói, EXP dos demônios
   e App Points, escolhidos no menu de cheats durante o jogo.
+- **Easy Recruit**: as negociações com demônios sempre dão certo, pelo menu
+  de cheats.
 - **60 FPS** (o jogo roda duas vezes mais rápido) e **30 FPS** para voltar.
 - Cheats da comunidade: Macca no máximo, App Points, itens, EXP, HP/MP e
   atributos do herói.
@@ -113,6 +115,7 @@ outros são códigos Action Replay comuns.
 | Hero EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplica a EXP do herói nas batalhas. |
 | Demon EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplica a EXP dos demônios (grupo e estoque). |
 | App Points x2 / x3 / x5 *(smt4-recomp)* | Multiplica os App Points. |
+| Easy Recruit *(smt4-recomp)* | Toda negociação dá certo: as respostas funcionam, recusar ou não ter o que o demônio pede ainda funciona, e ele não foge nem te engana. Ele ainda pede coisas. |
 | 60 FPS *(Enhancements)* | A lógica do jogo segue o frame rate, então tudo fica **duas vezes mais rápido**. Desligar **não** volta a velocidade normal: use o 30 FPS para isso. |
 | 30 FPS *(Enhancements)* | O padrão do jogo; desfaz o 60 FPS. |
 | Max Macca, 9999 App points, All items, Hero Max Exp, Hero HP/MP, Hero Stats | Códigos da comunidade. |
@@ -121,7 +124,7 @@ Ligue só um de cada multiplicador. Desligar um multiplicador ou o widescreen
 volta ao normal sozinho.
 
 Como funcionam (em inglês): [MULTIPLIERS.md](docs/MULTIPLIERS.md),
-[WIDESCREEN.md](docs/WIDESCREEN.md).
+[WIDESCREEN.md](docs/WIDESCREEN.md), [RECRUIT.md](docs/RECRUIT.md).
 
 ## Controles
 

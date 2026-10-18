@@ -45,6 +45,8 @@ cheat menu.
   at the sides, same height), not a stretched picture.
 - **Multipliers** x2, x3 and x5 for Macca, hero EXP, demon EXP and App
   Points, each picked from the cheat menu while playing.
+- **Easy Recruit**: demon negotiations always go your way, from the cheat
+  menu.
 - **60 FPS** (the game runs twice as fast with it) and **30 FPS** to go back.
 - Community cheats: max Macca, App Points, items, hero EXP, HP/MP and stats.
 - Everything Zakuro has: Vulkan or OpenGL, screen layouts, scaling and
@@ -112,6 +114,7 @@ others are standard Action Replay codes.
 | Hero EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplies the hero's EXP from battles. |
 | Demon EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplies the EXP demons get (party and stock). |
 | App Points x2 / x3 / x5 *(smt4-recomp)* | Multiplies App Points. |
+| Easy Recruit *(smt4-recomp)* | Every negotiation goes your way: answers work, refusing or not having what it asks still works, and the demon doesn't run off or cheat you. It still asks for things. |
 | 60 FPS *(Enhancements)* | The game logic is tied to the frame rate, so everything runs **twice as fast**. Turning it off does **not** bring the normal speed back: use 30 FPS for that. |
 | 30 FPS *(Enhancements)* | The game's default; undoes 60 FPS. |
 | Max Macca, 9999 App points, All items, Hero Max Exp, Hero HP/MP, Hero Stats | Community codes. |
@@ -120,7 +123,7 @@ Turn on only one of each multiplier. Turning a multiplier or widescreen
 cheat off goes back to normal on its own.
 
 How they work: [MULTIPLIERS.md](docs/MULTIPLIERS.md),
-[WIDESCREEN.md](docs/WIDESCREEN.md).
+[WIDESCREEN.md](docs/WIDESCREEN.md), [RECRUIT.md](docs/RECRUIT.md).
 
 ## Controls
 

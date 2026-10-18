@@ -29,6 +29,7 @@ DECLS = [
     'extern uint32_t smt4_boost_exp(Context *ctx, uint32_t gain);\n',
     'extern uint32_t smt4_boost_demon_exp(Context *ctx, uint32_t address);\n',
     'extern uint32_t smt4_widen_aspect(Context *ctx, uint32_t bits);\n',
+    'extern uint32_t smt4_talk_debug(Context *ctx, uint32_t index, uint32_t value);\n',
 ]
 
 # (description, instruction comment, text right after it, replacement)
@@ -60,6 +61,13 @@ PATCHES = [
         '    { uint32_t base = reg13_, p = base - 16, fin = base - 16;',
         '    vfp3_ = smt4_widen_aspect(ctx, vfp3_); /* smt4-recomp: widescreen */\n'
         '    { uint32_t base = reg13_, p = base - 16, fin = base - 16;',
+    ),
+    (
+        # r4 is the talk context, oa = r4 + 0x22A8 + index * 4
+        'easy recruit: talk debug setting read by script native 0x0259 at 0x002F1298',
+        '/* 002F1298 E59002A8 */',
+        '    uint32_t v = mem_read32(ctx, oa);',
+        '    uint32_t v = smt4_talk_debug(ctx, (oa - reg4_ - 0x22A8u) >> 2, mem_read32(ctx, oa)); /* smt4-recomp: easy recruit */',
     ),
 ]
 

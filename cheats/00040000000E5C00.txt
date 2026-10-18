@@ -77,3 +77,7 @@ D1000000 00000000
 [Widescreen 21:9]
 *Draws the 3D scene wider (more view at the sides, same height). Set Zakuro's Top screen shape to 21:9 too, or the picture comes out squeezed. Needs the smt4-recomp build. Takes effect at the next scene change.
 204EFF04 00000002
+
+[Easy Recruit]
+*Every negotiation goes your way: answers please the demon, refusing or not having what it asks still works, and it doesn't run off or cheat you. It still asks for things; turn it off to negotiate normally. Needs the smt4-recomp build.
+204EFF05 00000001

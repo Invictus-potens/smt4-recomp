@@ -97,9 +97,7 @@ work:
   to the Gateway/AR format Zakuro reads, but that's dozens of codes;
   finding the registration flags or the "add to compendium" function
   and filling it in one go is likely simpler.
-- **Easy recruit**: make negotiations succeed, for example by having the
-  demon accept at the first answer or skipping the item and Macca
-  demands. Needs the negotiation outcome check found in the code.
+- **Easy recruit**: done, see [RECRUIT.md](RECRUIT.md).
 
 Other ideas:
 - **Instant kill**: battle cheat, lower priority.

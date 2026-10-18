@@ -43,8 +43,11 @@
   Zakuro half was merged upstream in
   [fearkov/zakuro#19](https://github.com/fearkov/zakuro/pull/19).
   See [WIDESCREEN.md](WIDESCREEN.md).
+- **Easy Recruit** (2026-10-18): negotiation is a flowscript whose checks
+  each read a leftover debug setting first; the cheat answers those reads
+  the player's way. Tested in game. See [RECRUIT.md](RECRUIT.md).
 - Planned, not started: quality-of-life cheats (no random encounters,
-  full compendium, easy recruit) and others in
+  full compendium) and others in
   [ENHANCEMENTS.md](ENHANCEMENTS.md).
 
 ## Known issues / open questions
@@ -90,5 +93,4 @@
 - Upstream, waiting on the maintainer: issue
   [#17](https://github.com/fearkov/zakuro/issues/17) (cheats left in place
   when turned off). #18 and #19 are merged.
-- Quality-of-life cheats: no random encounters, full compendium, easy
-  recruit.
+- Quality-of-life cheats: no random encounters, full compendium.
