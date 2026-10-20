@@ -89,7 +89,7 @@
 
 - Watch handle counts over a longer play session to settle the
   `APT:U` question above.
-- Stability (2026-10-18): more than 6 hours of play from a new game, with
+- Stability (2026-10-20): more than 10 hours of play from a new game, with
   the multipliers, widescreen, Easy Recruit and a texture pack in use, and no
   crash.
 - Keep playing to find the next issue, if any.

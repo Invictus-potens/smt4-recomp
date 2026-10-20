@@ -13,7 +13,7 @@ On top of that, this project adds widescreen, multipliers for Macca, EXP and
 App Points, frame rate options and cheats, all switched from the in-game
 cheat menu.
 
-> **Beta.** Played from a new game for more than 6 hours with no crash.
+> **Beta.** Played from a new game for more than 10 hours with no crash.
 > The rest of the game hasn't been played on it yet: please report what you
 > find in [Issues](../../issues).
 
