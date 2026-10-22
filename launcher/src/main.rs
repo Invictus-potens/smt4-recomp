@@ -421,7 +421,11 @@ impl Launcher {
             .env("CC", gcc)
             .env("AR", ar)
             .env("PATH", self.env_path(tools))
-            .env("PYTHONUNBUFFERED", "1");
+            .env("PYTHONUNBUFFERED", "1")
+            // left over from an older Python, these make the new one load the
+            // old one's modules ("Module use of python36.dll conflicts...")
+            .env_remove("PYTHONPATH")
+            .env_remove("PYTHONHOME");
         run_job(self.job.clone(), ctx.clone(), "Building the game", command);
     }
 
@@ -666,7 +670,15 @@ impl eframe::App for Launcher {
                         } else if let Some(ok) = job_result {
                             status(ui, ok, &format!("{job_what}: {}", if ok { "done" } else { "failed, see the log" }));
                         }
-                        ui.checkbox(&mut self.show_log, "Show the log");
+                        ui.horizontal(|ui| {
+                            ui.checkbox(&mut self.show_log, "Show the log");
+                            if ui.button("Copy the log").clicked() {
+                                let text = self.job.lock().unwrap().log.join("
+");
+                                ui.ctx().copy_text(text);
+                                self.message = Some("The log is copied: paste it in the issue with Ctrl+V.".into());
+                            }
+                        });
                     }
                 });
 
