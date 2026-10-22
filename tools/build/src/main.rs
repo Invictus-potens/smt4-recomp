@@ -49,7 +49,8 @@ Steps: 1. tools, 2. ROM, 3. 3dsrecomp, 4. recompiling the game's code (20
 minutes or more, into code/), 5. patching the generated C, 6. the program,
 target/release/smt4(.exe), 7. Zakuro's cheats file. Done steps are skipped.
 Nothing it makes is meant to be shared: code/ and the program hold the game's
-code. CC and AR pick the C compiler and archiver.";
+code. CC and AR pick the C compiler and archiver; without them, it uses the
+first 64-bit gcc on PATH, or else one installed by winget (WinLibs) or MSYS2.";
 
 fn step(text: &str) {
     println!("\n== {text}");
@@ -133,6 +134,95 @@ fn project_root() -> PathBuf {
     found.or(cwd).unwrap_or_else(|| fail("run this from the smt4-recomp folder"))
 }
 
+/// whether gcc builds 64-bit x86 code (or anything, off x86-64)
+fn builds_64bit(gcc: &Path) -> bool {
+    let machine = output(gcc, &["-dumpmachine"]);
+    !machine.is_empty() && (machine.starts_with("x86_64") || !cfg!(target_arch = "x86_64"))
+}
+
+/// every gcc to try, in order: the ones on PATH, then where winget's WinLibs
+/// and MSYS2 install theirs
+fn gcc_candidates() -> Vec<PathBuf> {
+    let name = if cfg!(windows) { "gcc.exe" } else { "gcc" };
+    let mut dirs: Vec<PathBuf> = std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect()).unwrap_or_default();
+    if cfg!(windows) {
+        if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+            let packages = PathBuf::from(local).join("Microsoft").join("WinGet").join("Packages");
+            let mut winlibs: Vec<PathBuf> = std::fs::read_dir(packages)
+                .map(|entries| {
+                    entries
+                        .flatten()
+                        .filter(|e| e.file_name().to_string_lossy().contains("WinLibs"))
+                        .map(|e| e.path().join("mingw64").join("bin"))
+                        .collect()
+                })
+                .unwrap_or_default();
+            winlibs.sort();
+            dirs.extend(winlibs);
+        }
+        dirs.extend([r"C:\msys64\ucrt64\bin", r"C:\msys64\mingw64\bin", r"C:\msys64\clang64\bin"].map(PathBuf::from));
+    }
+    let mut seen = Vec::new();
+    for gcc in dirs.into_iter().map(|dir| dir.join(name)) {
+        if gcc.is_file() && !seen.contains(&gcc) {
+            seen.push(gcc);
+        }
+    }
+    seen
+}
+
+/// the C compiler and archiver: CC and AR when set; otherwise the first
+/// 64-bit gcc found, so an old 32-bit MinGW first on PATH doesn't get in
+/// the way, with the ar next to it
+fn find_compiler() -> (String, String) {
+    let ar_next_to = |gcc: &Path| {
+        let ar = gcc.with_file_name(if cfg!(windows) { "ar.exe" } else { "ar" });
+        if ar.is_file() { ar.display().to_string() } else { "ar".to_owned() }
+    };
+    if let Ok(cc) = std::env::var("CC") {
+        if which(&cc).is_none() {
+            fail(&format!("CC is {cc}, which isn't there"));
+        }
+        let ar = std::env::var("AR").unwrap_or_else(|_| which(&cc).map(|gcc| ar_next_to(&gcc)).unwrap_or_else(|| "ar".into()));
+        if which(&ar).is_none() {
+            fail(&format!("AR is {ar}, which isn't there"));
+        }
+        return (cc, ar);
+    }
+    let candidates = gcc_candidates();
+    match candidates.iter().find(|gcc| builds_64bit(gcc)) {
+        Some(gcc) => {
+            if let Some(first) = candidates.first().filter(|first| *first != gcc) {
+                println!("skipping {}, which isn't a 64-bit gcc", first.display());
+            }
+            let ar = std::env::var("AR").unwrap_or_else(|_| ar_next_to(gcc));
+            (gcc.display().to_string(), ar)
+        }
+        None if candidates.is_empty() => fail(
+            "gcc not found. On Windows, install MinGW-w64 GCC, for example with \
+             \"winget install BrechtSanders.WinLibs.POSIX.UCRT\", or set CC and AR to it",
+        ),
+        None => fail(&format!(
+            "no 64-bit gcc found, only {}. Install MinGW-w64 GCC, for example with \
+             \"winget install BrechtSanders.WinLibs.POSIX.UCRT\", or set CC and AR to a 64-bit one",
+            candidates.iter().map(|g| g.display().to_string()).collect::<Vec<_>>().join(", ")
+        )),
+    }
+}
+
+/// hands the compiler to everything run later, with its folder first on
+/// PATH so anything that runs a bare gcc gets the same one
+fn use_compiler(cc: &str, ar: &str) {
+    set_env("CC", cc);
+    set_env("AR", ar);
+    if let Some(dir) = which(cc).and_then(|gcc| gcc.parent().map(Path::to_path_buf)) {
+        let rest = std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect::<Vec<_>>()).unwrap_or_default();
+        if let Ok(path) = std::env::join_paths(std::iter::once(dir).chain(rest)) {
+            set_env("PATH", path);
+        }
+    }
+}
+
 fn check_tools() {
     step("1. tools");
     for (tool, hint) in [("cargo", "install Rust from https://rustup.rs"), ("git", "install git from https://git-scm.com")] {
@@ -140,16 +230,7 @@ fn check_tools() {
             fail(&format!("{tool} not found: {hint}"));
         }
     }
-    let cc = std::env::var("CC").unwrap_or_else(|_| "gcc".into());
-    let ar = std::env::var("AR").unwrap_or_else(|_| "ar".into());
-    for tool in [&cc, &ar] {
-        if which(tool).is_none() {
-            fail(&format!(
-                "{tool} not found. On Windows, install MinGW-w64 GCC, for example with \
-                 \"winget install BrechtSanders.WinLibs.POSIX.UCRT\", or set CC and AR to it"
-            ));
-        }
-    }
+    let (cc, ar) = find_compiler();
     let machine = output(&cc, &["-dumpmachine"]);
     let rustc = output("rustc", &["-vV"]);
     let host = rustc.lines().find_map(|l| l.strip_prefix("host: ")).unwrap_or("").to_owned();
@@ -158,8 +239,8 @@ fn check_tools() {
     println!("Rust: {}", or_unknown(&host));
     if !machine.is_empty() && !machine.starts_with("x86_64") && cfg!(target_arch = "x86_64") {
         fail(&format!(
-            "{cc} builds for {machine}, not 64-bit: another, older gcc is probably first on PATH. \
-             Set CC and AR to the full paths of a 64-bit MinGW-w64 gcc and ar"
+            "CC is {cc}, which builds for {machine}, not 64-bit. Set CC and AR to the full paths \
+             of a 64-bit MinGW-w64 gcc and ar, or leave them unset to use the first 64-bit gcc found"
         ));
     }
     if cfg!(windows) && host.ends_with("msvc") {
@@ -168,8 +249,7 @@ fn check_tools() {
              \"rustup default stable-x86_64-pc-windows-gnu\" and try again",
         );
     }
-    set_env("CC", &cc);
-    set_env("AR", &ar);
+    use_compiler(&cc, &ar);
     // run by `cargo run`, this program has this package's variables, which
     // aren't the game's or 3dsrecomp's
     for (key, _) in std::env::vars_os() {
@@ -448,8 +528,8 @@ fn main() {
         lower_priority();
     }
     if args.patch_only {
-        let cc = std::env::var("CC").unwrap_or_else(|_| "gcc".into());
-        let ar = std::env::var("AR").unwrap_or_else(|_| "ar".into());
+        let (cc, ar) = find_compiler();
+        use_compiler(&cc, &ar);
         patch::patch(&root, &cc, &ar);
         return;
     }

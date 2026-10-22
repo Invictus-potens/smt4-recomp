@@ -189,9 +189,10 @@ an image doesn't change: [MODDING.md](docs/MODDING.md).
 
 ## Troubleshooting
 
-- **"gcc builds for mingw32, not 64-bit"**: an old 32-bit MinGW comes first
-  on your PATH. Set `CC` and `AR` to the full paths of the 64-bit `gcc.exe`
-  and `ar.exe`.
+- **"no 64-bit gcc found"**: only an old 32-bit MinGW is installed (one that
+  comes first on PATH is skipped on its own). Install MinGW-w64, for example
+  `winget install BrechtSanders.WinLibs.POSIX.UCRT`, or set `CC` and `AR` to
+  the full paths of a 64-bit `gcc.exe` and `ar.exe`.
 - **"Rust uses the MSVC toolchain"**, or errors about `link.exe`: run
   `rustup default stable-x86_64-pc-windows-gnu`.
 - **"is title ..., this project is for Shin Megami Tensei IV (USA)"**: only
