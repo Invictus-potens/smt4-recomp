@@ -134,6 +134,14 @@ fn project_root() -> PathBuf {
     found.or(cwd).unwrap_or_else(|| fail("run this from the smt4-recomp folder"))
 }
 
+/// the gcc bundled with Strawberry Perl: 64-bit, but with a linker too old
+/// for current Rust (it rejects Rust's `-exclude-symbols` directives)
+fn is_strawberry(gcc: &Path) -> bool {
+    gcc.to_string_lossy().to_lowercase().contains("strawberry")
+}
+
+const INSTALL_GCC: &str = "Install MinGW-w64 GCC, for example with \"winget install BrechtSanders.WinLibs.POSIX.UCRT\"";
+
 /// whether gcc builds 64-bit x86 code (or anything, off x86-64)
 fn builds_64bit(gcc: &Path) -> bool {
     let machine = output(gcc, &["-dumpmachine"]);
@@ -187,13 +195,18 @@ fn find_compiler() -> (String, String) {
         if which(&ar).is_none() {
             fail(&format!("AR is {ar}, which isn't there"));
         }
+        if which(&cc).is_some_and(|gcc| is_strawberry(&gcc)) {
+            println!("warning: CC is Strawberry Perl's gcc, whose linker is usually too old for current Rust");
+        }
         return (cc, ar);
     }
     let candidates = gcc_candidates();
-    match candidates.iter().find(|gcc| builds_64bit(gcc)) {
+    let usable = |gcc: &&PathBuf| !is_strawberry(gcc) && builds_64bit(gcc);
+    match candidates.iter().find(usable) {
         Some(gcc) => {
-            if let Some(first) = candidates.first().filter(|first| *first != gcc) {
-                println!("skipping {}, which isn't a 64-bit gcc", first.display());
+            for skipped in candidates.iter().take_while(|c| *c != gcc) {
+                let why = if is_strawberry(skipped) { "Strawberry Perl's, too old for Rust" } else { "not a 64-bit gcc" };
+                println!("skipping {} ({why})", skipped.display());
             }
             let ar = std::env::var("AR").unwrap_or_else(|_| ar_next_to(gcc));
             (gcc.display().to_string(), ar)
@@ -203,8 +216,8 @@ fn find_compiler() -> (String, String) {
              \"winget install BrechtSanders.WinLibs.POSIX.UCRT\", or set CC and AR to it",
         ),
         None => fail(&format!(
-            "no 64-bit gcc found, only {}. Install MinGW-w64 GCC, for example with \
-             \"winget install BrechtSanders.WinLibs.POSIX.UCRT\", or set CC and AR to a 64-bit one",
+            "no usable 64-bit gcc found, only {} (Strawberry Perl's gcc has a linker too old for \
+             current Rust). {INSTALL_GCC}, or set CC and AR to a 64-bit one",
             candidates.iter().map(|g| g.display().to_string()).collect::<Vec<_>>().join(", ")
         )),
     }
@@ -556,6 +569,12 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn spots_strawberry_perls_gcc() {
+        assert!(is_strawberry(Path::new(r"C:\Strawberry\c\bin\gcc.exe")));
+        assert!(!is_strawberry(Path::new(r"C:\msys64\ucrt64\bin\gcc.exe")));
+    }
 
     #[test]
     fn reads_rom_titles() {

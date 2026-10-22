@@ -195,6 +195,10 @@ imagem não muda (em inglês): [MODDING.md](docs/MODDING.md).
   que venha primeiro no PATH é pulado sozinho). Instale o MinGW-w64, por
   exemplo `winget install BrechtSanders.WinLibs.POSIX.UCRT`, ou defina `CC` e
   `AR` com os caminhos completos de um `gcc.exe` e um `ar.exe` de 64 bits.
+- **Avisos `.drectve ... unrecognized` e depois um erro de link**: o gcc que
+  vem com o Strawberry Perl tem um linker antigo demais para o Rust atual. O
+  build pula ele sozinho quando há outro gcc de 64 bits instalado; instale um
+  com `winget install BrechtSanders.WinLibs.POSIX.UCRT`.
 - **"Rust uses the MSVC toolchain"**, ou erros sobre `link.exe`: rode
   `rustup default stable-x86_64-pc-windows-gnu`.
 - **"is title ..., this project is for Shin Megami Tensei IV (USA)"**: só a

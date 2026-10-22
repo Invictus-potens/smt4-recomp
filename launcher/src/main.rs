@@ -149,7 +149,7 @@ fn cargo_bin() -> Option<PathBuf> {
 
 /// a 64-bit gcc: on PATH, or where winget's WinLibs and MSYS2 put theirs,
 /// skipping old 32-bit MinGW ones that may come first on PATH
-fn find_gcc() -> Option<PathBuf> {
+fn find_gcc() -> GccSearch {
     let name = if cfg!(windows) { "gcc.exe" } else { "gcc" };
     let mut dirs: Vec<PathBuf> = std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect()).unwrap_or_default();
     if let Some(local) = std::env::var_os("LOCALAPPDATA") {
@@ -163,10 +163,26 @@ fn find_gcc() -> Option<PathBuf> {
         }
     }
     dirs.extend([r"C:\msys64\ucrt64\bin", r"C:\msys64\mingw64\bin"].map(PathBuf::from));
-    dirs.into_iter()
-        .map(|dir| dir.join(name))
-        .filter(|gcc| gcc.is_file())
-        .find(|gcc| output(gcc, &["-dumpmachine"]).is_some_and(|machine| machine.starts_with("x86_64")))
+    let is_64 = |gcc: &PathBuf| output(gcc, &["-dumpmachine"]).is_some_and(|machine| machine.starts_with("x86_64"));
+    let all: Vec<PathBuf> = dirs.into_iter().map(|dir| dir.join(name)).filter(|gcc| gcc.is_file()).collect();
+    match all.iter().find(|gcc| !is_strawberry(gcc) && is_64(gcc)) {
+        Some(gcc) => GccSearch::Found(gcc.clone()),
+        None => match all.into_iter().find(|gcc| is_strawberry(gcc)) {
+            Some(gcc) => GccSearch::OnlyStrawberry(gcc),
+            None => GccSearch::None,
+        },
+    }
+}
+
+enum GccSearch {
+    Found(PathBuf),
+    /// only Strawberry Perl's, whose linker is too old for current Rust
+    OnlyStrawberry(PathBuf),
+    None,
+}
+
+fn is_strawberry(gcc: &Path) -> bool {
+    gcc.to_string_lossy().to_lowercase().contains("strawberry")
 }
 
 fn check_tools() -> Tools {
@@ -194,11 +210,22 @@ fn check_tools() -> Tools {
         winget: Some("Rustlang.Rustup"),
     });
 
-    tools.gcc = find_gcc();
+    let search = find_gcc();
+    let hint = match &search {
+        GccSearch::OnlyStrawberry(gcc) => format!(
+            "Only {} found, from Strawberry Perl: its linker is too old for Rust. Install WinLibs.",
+            gcc.display()
+        ),
+        _ => "Compiles the recompiled game code (MinGW-w64).".into(),
+    };
+    tools.gcc = match search {
+        GccSearch::Found(gcc) => Some(gcc),
+        _ => None,
+    };
     tools.list.push(Tool {
         name: "64-bit GCC",
         found: tools.gcc.as_ref().map(|p| p.display().to_string()),
-        hint: "Compiles the recompiled game code (MinGW-w64).".into(),
+        hint,
         winget: Some("BrechtSanders.WinLibs.POSIX.UCRT"),
     });
 
