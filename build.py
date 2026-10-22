@@ -19,6 +19,14 @@ code. Options: --force redoes step 4 even when nothing changed,
 --no-cheats skips step 7, --low-priority builds at a lower priority, to keep
 playing something meanwhile. CC and AR pick the C compiler and archiver.
 """
+import sys
+
+# before anything newer is imported, so an old Python says why it stops
+if sys.version_info < (3, 8):
+    sys.exit('build.py needs Python 3.8 or newer; this is Python %d.%d.%d. '
+             'Get a current one from https://www.python.org/downloads/ '
+             '(or: winget install Python.Python.3.13).' % sys.version_info[:3])
+
 import argparse
 import hashlib
 import os
@@ -26,7 +34,6 @@ import pathlib
 import platform
 import shutil
 import subprocess
-import sys
 from typing import NoReturn
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -48,7 +55,7 @@ def fail(text: str) -> NoReturn:
     sys.exit(1)
 
 
-def run(args: list, cwd: pathlib.Path = ROOT, env: dict | None = None) -> None:
+def run(args: list, cwd: pathlib.Path = ROOT, env: 'dict | None' = None) -> None:
     print('>', ' '.join(str(a) for a in args), flush=True)
     if subprocess.run([str(a) for a in args], cwd=cwd, env=env).returncode != 0:
         fail(f'{pathlib.Path(str(args[0])).name} failed, see above')

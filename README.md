@@ -63,7 +63,7 @@ cheat menu.
   - [Rust](https://rustup.rs) with the GNU toolchain:
     `rustup default stable-x86_64-pc-windows-gnu`
   - MinGW-w64 GCC, 64-bit: `winget install BrechtSanders.WinLibs.POSIX.UCRT`
-  - [git](https://git-scm.com) and [Python 3](https://www.python.org)
+  - [git](https://git-scm.com) and [Python 3.8 or newer](https://www.python.org)
 
 ## Building
 

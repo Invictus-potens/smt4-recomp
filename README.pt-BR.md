@@ -64,7 +64,7 @@ dentro do jogo.
   - [Rust](https://rustup.rs) com o toolchain GNU:
     `rustup default stable-x86_64-pc-windows-gnu`
   - MinGW-w64 GCC, 64 bits: `winget install BrechtSanders.WinLibs.POSIX.UCRT`
-  - [git](https://git-scm.com) e [Python 3](https://www.python.org)
+  - [git](https://git-scm.com) e [Python 3.8 ou mais novo](https://www.python.org)
 
 ## Compilando
 

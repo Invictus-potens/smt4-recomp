@@ -203,17 +203,32 @@ fn check_tools() -> Tools {
         winget: Some("BrechtSanders.WinLibs.POSIX.UCRT"),
     });
 
-    tools.python = ["python", "py", "python3"]
+    // the newest of the Pythons on PATH; py, the Windows launcher, picks its newest
+    let pythons: Vec<(String, (u32, u32, u32))> = ["py", "python", "python3"]
         .into_iter()
-        .find(|p| output(p, &["--version"]).is_some_and(|v| v.starts_with("Python 3")))
-        .map(str::to_owned);
+        .filter_map(|p| Some((p.to_owned(), python_version(&output(p, &["--version"])?)?)))
+        .collect();
+    let newest = pythons.iter().max_by_key(|(_, v)| *v).cloned();
+    tools.python = newest.as_ref().filter(|(_, v)| *v >= MIN_PYTHON).map(|(p, _)| p.clone());
     tools.list.push(Tool {
-        name: "Python 3",
-        found: tools.python.as_ref().and_then(|p| output(p, &["--version"])),
-        hint: "Runs the build script.".into(),
+        name: "Python 3.8+",
+        found: newest.as_ref().filter(|(_, v)| *v >= MIN_PYTHON).map(|(_, (a, b, c))| format!("Python {a}.{b}.{c}")),
+        hint: match &newest {
+            Some((_, (a, b, c))) => format!("Python {a}.{b}.{c} found, but the build needs 3.8 or newer."),
+            None => "Runs the build script.".into(),
+        },
         winget: Some("Python.Python.3.13"),
     });
     tools
+}
+
+const MIN_PYTHON: (u32, u32, u32) = (3, 8, 0);
+
+/// "Python 3.6.0" to (3, 6, 0)
+fn python_version(text: &str) -> Option<(u32, u32, u32)> {
+    let mut parts = text.strip_prefix("Python ")?.trim().split('.');
+    let mut next = || parts.next().and_then(|p| p.chars().take_while(char::is_ascii_digit).collect::<String>().parse().ok());
+    Some((next()?, next()?, next().unwrap_or(0)))
 }
 
 // ---------------------------------------------------------------------------
@@ -574,8 +589,12 @@ impl eframe::App for Launcher {
                             if ui.add_enabled(!running && git, egui::Button::new("Download")).clicked() {
                                 self.start_clone(ctx);
                             }
-                        } else if ui.add_enabled(!running && git, egui::Button::new("Update")).clicked() {
-                            self.start_update(ctx);
+                        } else if self.source().join(".git").exists() {
+                            if ui.add_enabled(!running && git, egui::Button::new("Update")).clicked() {
+                                self.start_update(ctx);
+                            }
+                        } else {
+                            ui.weak("Not a git download, so Update can't refresh it; download a newer release to update.");
                         }
                         if ui.add_enabled(!running, egui::Button::new("Choose another folder…")).clicked() {
                             if let Some(folder) = rfd::FileDialog::new().pick_folder() {
@@ -682,6 +701,16 @@ mod tests {
     use super::*;
 
     /// SMT4_ROM_DIR=<folder with the game> cargo test
+    #[test]
+    fn reads_python_versions() {
+        assert_eq!(python_version("Python 3.6.0"), Some((3, 6, 0)));
+        assert_eq!(python_version("Python 3.13.1"), Some((3, 13, 1)));
+        assert_eq!(python_version("Python 3.14.0rc1"), Some((3, 14, 0)));
+        assert_eq!(python_version("Python 2.7.18"), Some((2, 7, 18)));
+        assert_eq!(python_version("not python"), None);
+        assert!((3, 6, 0) < MIN_PYTHON && (3, 8, 10) >= MIN_PYTHON && (3, 13, 1) >= MIN_PYTHON);
+    }
+
     #[test]
     fn finds_the_rom_in_a_folder() {
         let Some(dir) = std::env::var_os("SMT4_ROM_DIR") else { return };
