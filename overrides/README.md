@@ -13,4 +13,4 @@ format. They're compiled in by `3dsrecomp port ... --overrides overrides/`.
   [docs/WIDESCREEN.md](../docs/WIDESCREEN.md).
 
 Code that isn't at a function entry can't be overridden; those spots are
-patched in the generated C by `scripts/patch_generated.py` instead.
+patched in the generated C by `tools/build/src/patch.rs` instead.

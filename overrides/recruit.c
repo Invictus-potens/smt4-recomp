@@ -6,7 +6,7 @@
  * the demon run off with what it took, ...) each start by asking a debug
  * setting through script native 0x0259, f_002F127C, which reads it from the
  * talk context at +0x22A8 + index * 4. In the shipped game they're all 0, so
- * the checks go on to roll their odds. scripts/patch_generated.py routes that
+ * the checks go on to roll their odds. tools/build/src/patch.rs routes that
  * read through smt4_talk_debug, which, while the [Easy Recruit] cheat is on,
  * answers with the settings that make every check go the player's way.
  *

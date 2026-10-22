@@ -14,6 +14,7 @@ code/
 # local scratch
 *.log
 /.build
-__pycache__/
 /tools/extract/target
+/tools/build/target
+/tools/fit-texture/target
 /launcher/target

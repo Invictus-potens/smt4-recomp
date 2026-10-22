@@ -6,7 +6,7 @@ having what it asks for still works, and it doesn't run off, take a gift and
 leave, or cut the talk short. The demon still asks for things. Turning the
 cheat off goes back to normal negotiation on its own.
 
-Code: `overrides/recruit.c` and one patch in `scripts/patch_generated.py`.
+Code: `overrides/recruit.c` and one patch in `tools/build/src/patch.rs`.
 
 ## How negotiation works
 

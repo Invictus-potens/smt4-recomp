@@ -67,7 +67,7 @@ cheat menu.
   - [Rust](https://rustup.rs) with the GNU toolchain:
     `rustup default stable-x86_64-pc-windows-gnu`
   - MinGW-w64 GCC, 64-bit: `winget install BrechtSanders.WinLibs.POSIX.UCRT`
-  - [git](https://git-scm.com) and [Python 3.8 or newer](https://www.python.org)
+  - [git](https://git-scm.com)
 
 ## Building
 
@@ -91,16 +91,16 @@ It holds no game code, so it can be shared.
 ```
 git clone https://github.com/Invictus-potens/smt4-recomp
 cd smt4-recomp
-python build.py "C:\path\to\Shin Megami Tensei IV (USA).3ds"
+cargo build-game "C:\path\to\Shin Megami Tensei IV (USA).3ds"
 ```
 
-`build.py` checks your tools and ROM, fetches and builds 3dsrecomp at the
+`cargo build-game` (the builder in `tools/build`) checks your tools and ROM, fetches and builds 3dsrecomp at the
 version this project was tested with, recompiles the game's code with this
 project's changes, builds the program and copies the cheats to Zakuro's
 cheats folder (adding the missing ones to a cheats file already there,
 without touching the rest). The recompilation takes **20 minutes or more**; add
 `--low-priority` to keep using the PC meanwhile. Running it again later only
-redoes what changed. `python build.py --help` lists the options.
+redoes what changed. `cargo build-game --help` lists the options.
 
 When it's done, the program is `target\release\smt4.exe`.
 
@@ -180,7 +180,7 @@ To replace an image of the game with your own (a portrait, an icon, a
 background), at the same resolution or higher:
 
 ```
-python scripts\fit_texture.py <assets>\textures\tex\stex\stbustup\st_bu_pc001.png my_picture.png
+cargo fit-texture <assets>\textures\tex\stex\stbustup\st_bu_pc001.png my_picture.png
 ```
 
 It fits your picture where the original's character is and installs it as a
@@ -205,14 +205,14 @@ an image doesn't change: [MODDING.md](docs/MODDING.md).
 
 | Part | Where | What it does |
 |---|---|---|
-| Launcher | `launcher/` | A window around `build.py`: finds the ROM, checks the tools, builds, plays |
-| Build script | `build.py` | Runs every step below, from your ROM to the program |
+| Launcher | `launcher/` | A window around `tools/build`: finds the ROM, checks the tools, builds, plays |
+| Builder | `tools/build` (`cargo build-game`) | Runs every step below, from your ROM to the program |
 | Recompiler | [3dsrecomp](https://github.com/fearkov/3dsrecomp) | Finds the game's functions and writes them as C, into `code/` (not in this repo) |
 | Overrides | `overrides/` | Functions written by hand that replace generated ones: the Macca and App Points multipliers, widescreen |
-| Patches | `scripts/patch_generated.py` | Changes the generated C where an override can't reach (hero and demon EXP, the projection) |
+| Patches | `tools/build/src/patch.rs` | Changes the generated C where an override can't reach (hero and demon EXP, the projection) |
 | Program | `Cargo.toml`, `build.rs`, `src/main.rs` | Links the compiled code with Zakuro |
 | Runtime | [Zakuro](https://github.com/fearkov/zakuro) | 3DS kernel, services, GPU and sound |
-| Image mods | `scripts/fit_texture.py` | Makes and installs a texture pack picture, see [MODDING.md](docs/MODDING.md) |
+| Image mods | `tools/fit-texture` (`cargo fit-texture`) | Makes and installs a texture pack picture, see [MODDING.md](docs/MODDING.md) |
 | Asset extractor | `tools/extract/` | Pulls the game's files out of the ROM and converts them, see [ASSETS.md](docs/ASSETS.md) |
 | Cheats | `cheats/00040000000E5C00.txt` | Codes for Zakuro's cheat menu; the *smt4-recomp* ones write a control byte the overrides read |
 

@@ -5,7 +5,7 @@
  * near, far), aspect in s1, which sets m[0][0] = cot(fovy/2) / aspect. Its
  * camera, f_002C1FFC(camera, fovy_degrees, near, far, aspect), aspect in s3,
  * keeps the aspect in the camera too. Both are given 400/240 for the top
- * screen. scripts/patch_generated.py makes both entries pass their aspect
+ * screen. tools/build/src/patch.rs makes both entries pass their aspect
  * through smt4_widen_aspect, which swaps 400/240 for a wider one: the scene
  * gets more view at the sides with the same vertical view (Hor+).
  *

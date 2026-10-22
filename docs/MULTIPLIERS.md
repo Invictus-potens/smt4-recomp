@@ -2,7 +2,7 @@
 
 Macca, hero EXP, demon EXP and App Points multipliers (x2/x3/x5), picked from Zakuro's
 cheat menu while the game runs. Code: `overrides/multipliers.c` and
-`scripts/patch_generated.py`. Cheats: `cheats/00040000000E5C00.txt`.
+`tools/build/src/patch.rs`. Cheats: `cheats/00040000000E5C00.txt`.
 
 | Resource | Cheats | Control byte | Hooked at |
 |---|---|---|---|
@@ -118,7 +118,7 @@ There's no add-EXP function to override. The battle-results function
 ```
 
 `r7` is used again for the level-up check right after, so multiplying the
-gain at the add covers that too. `scripts/patch_generated.py` rewrites the
+gain at the add covers that too. `tools/build/src/patch.rs` rewrites the
 add's operand to `smt4_boost_exp(ctx, reg0_)`, anchored on the instruction
 comment so it fails instead of patching the wrong spot after a new port.
 

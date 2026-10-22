@@ -1,0 +1,16 @@
+[package]
+name = "smt4-fit-texture"
+version = "0.1.0"
+edition = "2021"
+description = "Makes a texture pack picture from your own image, to take the place of one of Shin Megami Tensei IV's textures"
+license = "MIT"
+publish = false
+
+[dependencies]
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "bmp", "gif"] }
+
+[profile.release]
+debug = false
+
+# a project of its own, separate from the game's
+[workspace]

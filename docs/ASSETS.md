@@ -136,7 +136,7 @@ Zakuro's own code over the texture as the game hands it to the GPU.
 
 ## Putting assets back: mods
 
-Replacing images with texture packs, and `scripts/fit_texture.py`, which
+Replacing images with texture packs, and `cargo fit-texture` (`tools/fit-texture`), which
 makes and installs a picture for one: [MODDING.md](MODDING.md).
 
 Zakuro also takes files that replace the game's own at their RomFS paths, in
