@@ -1,0 +1,6 @@
+# shortcuts, run from this folder:
+#   cargo build-game <your .3ds>    builds the game (tools/build)
+#   cargo fit-texture <png> <image> makes a texture pack picture (tools/fit-texture)
+[alias]
+build-game = ["run", "--release", "--quiet", "--manifest-path", "tools/build/Cargo.toml", "--"]
+fit-texture = ["run", "--release", "--quiet", "--manifest-path", "tools/fit-texture/Cargo.toml", "--"]

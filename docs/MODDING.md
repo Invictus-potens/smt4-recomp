@@ -7,11 +7,10 @@ format Citra and Azahar use: a folder of PNGs, each named after a hash of the
 texture it replaces. While drawing, Zakuro swaps the game's texture for your
 picture.
 
-Everything here works with the plain program from `build.py`. You need:
+Everything here works with the plain program from `cargo build-game`. You need:
 
 - the textures extracted with `tools/extract` (see [ASSETS.md](ASSETS.md)),
   which also writes `textures/pack-names.txt`, the pack name of every texture;
-- [FFmpeg](https://ffmpeg.org) on `PATH`, for `scripts/fit_texture.py`;
 - **Draw the 3D on the GPU** on in Settings (it is by default): texture packs
   only apply to what the GPU draws.
 
@@ -34,7 +33,7 @@ Everything here works with the plain program from `build.py`. You need:
 2. **Make the picture** and install it in one go:
 
    ```
-   python scripts\fit_texture.py <assets>\textures\tex\stex\stbustup\st_bu_pc001.png my_picture.png
+   cargo fit-texture <assets>\textures\tex\stex\stbustup\st_bu_pc001.png my_picture.png
    ```
 
    It works out the name Zakuro looks for (from `pack-names.txt`), fits your
@@ -54,7 +53,7 @@ on the bottom edge. The game places and scales the whole texture, so a picture
 that fills all of it comes out much bigger than the character did (that's what
 happened in battle the first time).
 
-So `fit_texture.py` measures the area the original's visible pixels take up,
+So `cargo fit-texture` measures the area the original's visible pixels take up,
 and fits your picture inside that area, keeping its proportions, centered
 across and resting on the bottom, leaving the rest transparent. Options:
 

@@ -9,7 +9,7 @@ It takes two parts that have to agree:
    `Widescreen 21:9` cheat (control byte `0x004EFF04`) makes the game's
    projection use that aspect instead of 400/240. Code:
    `overrides/widescreen.c` and two patches in
-   `scripts/patch_generated.py`.
+   `tools/build/src/patch.rs`.
 2. **Zakuro shows the top screen that wide.** The game still draws into
    the console's 400x240 framebuffer, so the wider scene comes out squeezed
    until it's stretched back out. That's the `Top screen shape` setting

@@ -1,0 +1,15 @@
+[package]
+name = "smt4-build"
+version = "0.1.0"
+edition = "2021"
+description = "Builds smt4-recomp from your own copy of Shin Megami Tensei IV (USA)"
+license = "MIT"
+publish = false
+
+# no dependencies: it builds in a few seconds, offline
+
+[profile.release]
+debug = false
+
+# a project of its own, separate from the game's
+[workspace]

@@ -107,7 +107,7 @@ RECOMP_OVERRIDE(0x0026E8A0) {
 
 /* Hero EXP from a battle. The battle-results function (f_0018BFEC) adds it
  * inline, hero.exp + results[+0x35B4], at 0x0018CF84, which isn't a function
- * entry, so scripts/patch_generated.py rewrites that add to call this. */
+ * entry, so tools/build/src/patch.rs rewrites that add to call this. */
 uint32_t smt4_boost_exp(Context *ctx, uint32_t gain) {
     return boost(ctx, &hero_exp_knob, gain, "HeroExp", SAVE_HERO_EXP, 0x0018CF84u);
 }
@@ -119,7 +119,7 @@ uint32_t smt4_boost_exp(Context *ctx, uint32_t gain) {
  * and in some cases undoes it at 0x0018D230 by re-reading the gain through
  * that pointer. So the gain is boosted where it's loaded and written back,
  * and every later read, the undo included, sees the same value.
- * scripts/patch_generated.py turns that load into a call to this. */
+ * tools/build/src/patch.rs turns that load into a call to this. */
 uint32_t smt4_boost_demon_exp(Context *ctx, uint32_t address) {
     uint32_t gain = mem_read32(ctx, address);
     uint32_t boosted = boost(ctx, &demon_exp_knob, gain, "DemonExp", address, 0x0018D190u);

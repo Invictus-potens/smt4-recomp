@@ -1,6 +1,6 @@
 //! Launcher for smt4-recomp. It finds your copy of Shin Megami Tensei IV
 //! (USA), checks the tools the build needs, gets this project's source,
-//! builds the game into a program with build.py, and starts it.
+//! builds the game into a program with tools/build, and starts it.
 //!
 //! It holds no game code, so unlike the program it builds it can be shared.
 
@@ -117,7 +117,6 @@ struct Tool {
 struct Tools {
     list: Vec<Tool>,
     gcc: Option<PathBuf>,
-    python: Option<String>,
     rust_msvc: bool,
 }
 
@@ -203,32 +202,7 @@ fn check_tools() -> Tools {
         winget: Some("BrechtSanders.WinLibs.POSIX.UCRT"),
     });
 
-    // the newest of the Pythons on PATH; py, the Windows launcher, picks its newest
-    let pythons: Vec<(String, (u32, u32, u32))> = ["py", "python", "python3"]
-        .into_iter()
-        .filter_map(|p| Some((p.to_owned(), python_version(&output(p, &["--version"])?)?)))
-        .collect();
-    let newest = pythons.iter().max_by_key(|(_, v)| *v).cloned();
-    tools.python = newest.as_ref().filter(|(_, v)| *v >= MIN_PYTHON).map(|(p, _)| p.clone());
-    tools.list.push(Tool {
-        name: "Python 3.8+",
-        found: newest.as_ref().filter(|(_, v)| *v >= MIN_PYTHON).map(|(_, (a, b, c))| format!("Python {a}.{b}.{c}")),
-        hint: match &newest {
-            Some((_, (a, b, c))) => format!("Python {a}.{b}.{c} found, but the build needs 3.8 or newer."),
-            None => "Runs the build script.".into(),
-        },
-        winget: Some("Python.Python.3.13"),
-    });
     tools
-}
-
-const MIN_PYTHON: (u32, u32, u32) = (3, 8, 0);
-
-/// "Python 3.6.0" to (3, 6, 0)
-fn python_version(text: &str) -> Option<(u32, u32, u32)> {
-    let mut parts = text.strip_prefix("Python ")?.trim().split('.');
-    let mut next = || parts.next().and_then(|p| p.chars().take_while(char::is_ascii_digit).collect::<String>().parse().ok());
-    Some((next()?, next()?, next().unwrap_or(0)))
 }
 
 // ---------------------------------------------------------------------------
@@ -241,7 +215,7 @@ struct Job {
     /// whether the last job worked, once it's done
     result: Option<bool>,
     log: Vec<String>,
-    /// build.py's step, 1 to 7, and "compiled n of total" during step 4
+    /// the build's step, 1 to 7, and "compiled n of total" during step 4
     step: u32,
     compiled: (u32, u32),
 }
@@ -344,7 +318,7 @@ struct Launcher {
 /// the project folder the launcher sits in, when it's run from a checkout
 fn source_around_exe() -> Option<PathBuf> {
     let exe = std::env::current_exe().ok()?;
-    exe.ancestors().find(|dir| dir.join("build.py").is_file() && dir.join("overrides").is_dir()).map(Path::to_path_buf)
+    exe.ancestors().find(|dir| is_source(dir) && dir.join("overrides").is_dir()).map(Path::to_path_buf)
 }
 
 fn default_source() -> PathBuf {
@@ -353,7 +327,12 @@ fn default_source() -> PathBuf {
 }
 
 fn is_source(dir: &Path) -> bool {
-    dir.join("build.py").is_file()
+    dir.join("tools").join("build").join("Cargo.toml").is_file()
+}
+
+/// a project folder from before the build moved from build.py to tools/build
+fn is_old_source(dir: &Path) -> bool {
+    !is_source(dir) && dir.join("build.py").is_file()
 }
 
 impl Launcher {
@@ -410,22 +389,23 @@ impl Launcher {
     }
 
     fn start_build(&mut self, ctx: &egui::Context, tools: &Tools) {
-        let (Some(rom), Some(gcc), Some(python)) = (&self.config.rom, &tools.gcc, &tools.python) else { return };
+        let (Some(rom), Some(gcc)) = (&self.config.rom, &tools.gcc) else { return };
         let ar = gcc.with_file_name(if cfg!(windows) { "ar.exe" } else { "ar" });
-        let mut command = Command::new(python);
+        let cargo = cargo_bin()
+            .map(|bin| bin.join(if cfg!(windows) { "cargo.exe" } else { "cargo" }))
+            .filter(|cargo| cargo.is_file())
+            .unwrap_or_else(|| PathBuf::from("cargo"));
+        let mut command = Command::new(cargo);
         command
-            .args(["-u", "build.py"])
+            .args(["run", "--release", "--manifest-path"])
+            .arg(Path::new("tools").join("build").join("Cargo.toml"))
+            .arg("--")
             .arg(rom)
             .arg("--low-priority")
             .current_dir(self.source())
             .env("CC", gcc)
             .env("AR", ar)
-            .env("PATH", self.env_path(tools))
-            .env("PYTHONUNBUFFERED", "1")
-            // left over from an older Python, these make the new one load the
-            // old one's modules ("Module use of python36.dll conflicts...")
-            .env_remove("PYTHONPATH")
-            .env_remove("PYTHONHOME");
+            .env("PATH", self.env_path(tools));
         run_job(self.job.clone(), ctx.clone(), "Building the game", command);
     }
 
@@ -571,7 +551,7 @@ impl eframe::App for Launcher {
                                                     .args(["/c", "start", "winget", "install", "-e", "--id", id])
                                                     .spawn();
                                                 self.message = Some(format!(
-                                                    "Installing {}. When it's done, press Check again (Rust and Python may need the launcher reopened).",
+                                                    "Installing {}. When it's done, press Check again (Rust may need the launcher reopened).",
                                                     tool.name
                                                 ));
                                             }
@@ -589,11 +569,20 @@ impl eframe::App for Launcher {
                     status(ui, source_ok, &self.source().display().to_string());
                     ui.horizontal(|ui| {
                         let git = tools.as_ref().is_some_and(|t| t.list.first().is_some_and(|g| g.found.is_some()));
-                        if !source_ok {
+                        let old = is_old_source(&self.source());
+                        let cloned = self.source().join(".git").exists();
+                        if old && !cloned {
+                            ui.weak("This folder is an older version of the project, which built with Python. Download a newer release, or choose an empty folder and press Download.");
+                        } else if old {
+                            ui.weak("An older version of the project: press Update.");
+                            if ui.add_enabled(!running && git, egui::Button::new("Update")).clicked() {
+                                self.start_update(ctx);
+                            }
+                        } else if !source_ok {
                             if ui.add_enabled(!running && git, egui::Button::new("Download")).clicked() {
                                 self.start_clone(ctx);
                             }
-                        } else if self.source().join(".git").exists() {
+                        } else if cloned {
                             if ui.add_enabled(!running && git, egui::Button::new("Update")).clicked() {
                                 self.start_update(ctx);
                             }
@@ -713,16 +702,6 @@ mod tests {
     use super::*;
 
     /// SMT4_ROM_DIR=<folder with the game> cargo test
-    #[test]
-    fn reads_python_versions() {
-        assert_eq!(python_version("Python 3.6.0"), Some((3, 6, 0)));
-        assert_eq!(python_version("Python 3.13.1"), Some((3, 13, 1)));
-        assert_eq!(python_version("Python 3.14.0rc1"), Some((3, 14, 0)));
-        assert_eq!(python_version("Python 2.7.18"), Some((2, 7, 18)));
-        assert_eq!(python_version("not python"), None);
-        assert!((3, 6, 0) < MIN_PYTHON && (3, 8, 10) >= MIN_PYTHON && (3, 13, 1) >= MIN_PYTHON);
-    }
-
     #[test]
     fn finds_the_rom_in_a_folder() {
         let Some(dir) = std::env::var_os("SMT4_ROM_DIR") else { return };
