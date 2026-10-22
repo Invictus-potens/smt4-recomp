@@ -122,6 +122,11 @@ Vulkan going for one launch.
 The 3D model the hero walks around with has its textures inside the model
 (`player/`), not among these; the dump above is the way to find those.
 
+Here's an example
+
+<img width="858" height="1018" alt="image" src="https://github.com/user-attachments/assets/c107b798-81a1-48e8-b0c8-ccf9977d9ae9" />
+
+
 ## Sharing a mod
 
 The pictures you made are yours to share; the game's textures and the
