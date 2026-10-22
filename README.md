@@ -1,4 +1,6 @@
-# Shin Megami Tensei IV for PC (smt4-recomp)
+# Shin Megami Tensei IV for PC (smt4-recomp) <img width="117" height="108" alt="{8E40671F-654B-4EAF-9131-FDBCC230FD53}" src="https://github.com/user-attachments/assets/4ae70845-a934-4430-9e5b-c35545c04156" />
+
+
 
 **English** | [Português (Brasil)](README.pt-BR.md)
 
