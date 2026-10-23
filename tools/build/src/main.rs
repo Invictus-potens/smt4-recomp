@@ -14,11 +14,13 @@
 //! 5. patches the generated C (src/patch.rs here);
 //! 6. builds the program, target/release/smt4(.exe);
 //! 7. puts the cheats file in Zakuro's cheats folder, adding only the cheats
-//!    missing from one already there.
+//!    missing from one already there;
+//! 8. with --bundle, on macOS, makes target/release/SMT4.app (src/bundle.rs).
 //!
 //! Nothing it makes is meant to be shared: code/ and the program hold the
 //! game's code.
 
+mod bundle;
 mod patch;
 mod sha256;
 
@@ -39,18 +41,20 @@ const EXE: &str = std::env::consts::EXE_SUFFIX;
 const USAGE: &str = "\
 Builds smt4-recomp from your own copy of Shin Megami Tensei IV (USA).
 
-usage: cargo build-game <rom> [--force] [--no-cheats] [--low-priority]
+usage: cargo build-game <rom> [--force] [--no-cheats] [--low-priority] [--bundle]
        cargo build-game --patch-only
 
   <rom>           your Shin Megami Tensei IV (USA) .3ds/.cci
   --force         redo the recompilation even when nothing changed
   --no-cheats     don't copy the cheats file to Zakuro's folder
   --low-priority  build at a lower priority, to keep using the PC meanwhile
+  --bundle        on macOS, also make target/release/SMT4.app, MoltenVK inside
   --patch-only    only patch the generated C in code/ and put it in librecomp.a
 
 Steps: 1. tools, 2. ROM, 3. 3dsrecomp, 4. recompiling the game's code (20
 minutes or more, into code/), 5. patching the generated C, 6. the program,
-target/release/smt4(.exe), 7. Zakuro's cheats file. Done steps are skipped.
+target/release/smt4(.exe), 7. Zakuro's cheats file, 8. with --bundle, the
+macOS app. Done steps are skipped.
 Nothing it makes is meant to be shared: code/ and the program hold the game's
 code. CC and AR pick the C compiler and archiver; without them, it uses the
 first 64-bit gcc on PATH, or else one installed by winget (WinLibs) or MSYS2.
@@ -379,7 +383,7 @@ fn inputs_stamp(root: &Path, rom: &Path) -> String {
     h.hex()
 }
 
-fn absolute(path: &Path) -> PathBuf {
+pub fn absolute(path: &Path) -> PathBuf {
     std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf())
 }
 
@@ -547,10 +551,11 @@ struct Args {
     no_cheats: bool,
     low_priority: bool,
     patch_only: bool,
+    bundle: bool,
 }
 
 fn parse_args() -> Args {
-    let mut args = Args { rom: None, force: false, no_cheats: false, low_priority: false, patch_only: false };
+    let mut args = Args { rom: None, force: false, no_cheats: false, low_priority: false, patch_only: false, bundle: false };
     for arg in std::env::args_os().skip(1) {
         match arg.to_str() {
             Some("-h" | "--help") => {
@@ -561,6 +566,7 @@ fn parse_args() -> Args {
             Some("--no-cheats") => args.no_cheats = true,
             Some("--low-priority") => args.low_priority = true,
             Some("--patch-only") => args.patch_only = true,
+            Some("--bundle") => args.bundle = true,
             Some(flag) if flag.starts_with("--") => fail(&format!("unknown option {flag}\n\n{USAGE}")),
             _ if args.rom.is_none() => args.rom = Some(PathBuf::from(arg)),
             _ => fail(&format!("only one ROM, please\n\n{USAGE}")),
@@ -583,6 +589,9 @@ fn main() {
         return;
     }
     let Some(rom) = args.rom else { fail(&format!("which ROM?\n\n{USAGE}")) };
+    if args.bundle && !cfg!(target_os = "macos") {
+        fail("--bundle makes a macOS app, and works only on macOS");
+    }
 
     check_tools();
     check_rom(&rom);
@@ -594,8 +603,15 @@ fn main() {
     if !args.no_cheats {
         install_cheats(&root);
     }
+    let app = args.bundle.then(|| {
+        step("8. the macOS app");
+        bundle::bundle(&root, &work, &exe, &rom)
+    });
     step("done");
     println!("Run it with:\n  \"{}\" \"{}\"", exe.display(), absolute(&rom).display());
+    if let Some(app) = app {
+        println!("or open {}, from the Finder or with: open \"{}\"", app.display(), app.display());
+    }
     println!(
         "Recommended: Settings, Layout \"Top screen only\", Top screen shape 16:9, and the \
          \"Widescreen 16:9\" cheat. See README.md."

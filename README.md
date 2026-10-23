@@ -123,6 +123,11 @@ On macOS it's the same with Unix paths, and the program is
 cargo build-game ~/Games/"Shin Megami Tensei IV (USA).3ds"
 ```
 
+Add `--bundle` to also make `target/release/SMT4.app`, which opens from the
+Finder with the ROM it was built from (or one dropped on it) and carries
+MoltenVK inside, so it doesn't need Homebrew to run. Like the program, it
+holds the game's code: don't share it.
+
 ## Playing
 
 ```
