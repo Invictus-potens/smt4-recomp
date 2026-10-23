@@ -8,7 +8,22 @@ publish = false
 
 [dependencies]
 log = "0.4"
+
+# macOS presents through Vulkan on MoltenVK, with no OpenGL to fall back on
+[target.'cfg(target_os = "macos")'.dependencies]
+zakuro = { git = "https://github.com/fearkov/zakuro", default-features = false }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
 zakuro = { git = "https://github.com/fearkov/zakuro" }
+
+# the forks with the macOS changes, until fearkov's Zakuro and 3dsrecomp
+# have them
+[patch."https://github.com/fearkov/zakuro"]
+zakuro = { git = "https://github.com/Tony0000/zakuro", branch = "macos" }
+
+[patch."https://github.com/fearkov/3dsrecomp"]
+recomp-abi = { git = "https://github.com/Tony0000/3dsrecomp", branch = "macos" }
+recomp3ds = { git = "https://github.com/Tony0000/3dsrecomp", branch = "macos" }
 
 # a project of its own, whatever directory it sits in
 [workspace]

@@ -6,7 +6,7 @@
 
 [English](README.md) | **Português (Brasil)**
 
-Uma versão nativa para Windows de *Shin Megami Tensei IV* (3DS, EUA), feita
+Uma versão nativa para Windows e macOS de *Shin Megami Tensei IV* (3DS, EUA), feita
 por recompilação estática: o [3dsrecomp](https://github.com/fearkov/3dsrecomp)
 traduz o código ARM do jogo para C antes de rodar, e esse C é compilado num
 programa próprio, com o [Zakuro](https://github.com/fearkov/zakuro) como
@@ -54,8 +54,8 @@ dentro do jogo.
 - **60 FPS** (o jogo roda duas vezes mais rápido) e **30 FPS** para voltar.
 - Cheats da comunidade: Macca no máximo, App Points, itens, EXP, HP/MP e
   atributos do herói.
-- Tudo o que o Zakuro tem: Vulkan ou OpenGL, layouts de tela, escala e
-  filtros, save states, controles, 3D.
+- Tudo o que o Zakuro tem: Vulkan (Metal pelo MoltenVK no macOS) ou
+  OpenGL, layouts de tela, escala e filtros, save states, controles, 3D.
 
 ## Requisitos
 
@@ -69,6 +69,17 @@ dentro do jogo.
     `rustup default stable-x86_64-pc-windows-gnu`
   - MinGW-w64 GCC, 64 bits: `winget install BrechtSanders.WinLibs.POSIX.UCRT`
   - [git](https://git-scm.com)
+
+### macOS
+
+- Um Mac com Apple Silicon (M1 ou mais novo). Macs com Intel não foram
+  testados.
+- As ferramentas de linha de comando da Apple (clang, ar e git):
+  `xcode-select --install`
+- [Rust](https://rustup.rs), o toolchain padrão
+- [MoltenVK](https://github.com/KhronosGroup/MoltenVK), Vulkan sobre Metal,
+  com que o jogo desenha: `brew install molten-vk` ([Homebrew](https://brew.sh)).
+  A versão para macOS não tem OpenGL.
 
 ## Compilando
 
@@ -84,6 +95,9 @@ cd launcher
 cargo build --release
 target\release\smt4-launcher.exe
 ```
+
+No macOS ele é `target/release/smt4-launcher`, e instala as ferramentas com
+`xcode-select --install`, o rustup e `brew install molten-vk`.
 
 Ele não contém código do jogo, então pode ser compartilhado.
 
@@ -105,6 +119,13 @@ depois só refaz o que mudou. `cargo build-game --help` mostra as opções.
 
 No fim, o programa fica em `target\release\smt4.exe`.
 
+No macOS é igual, com caminhos Unix, e o programa fica em
+`target/release/smt4`:
+
+```
+cargo build-game ~/Games/"Shin Megami Tensei IV (USA).3ds"
+```
+
 ## Jogando
 
 ```
@@ -113,7 +134,7 @@ target\release\smt4.exe "C:\caminho\para\Shin Megami Tensei IV (USA).3ds"
 
 Ele lê os arquivos do jogo e tudo menos o código do seu dump, então deixe a
 ROM onde está. Saves, save states e configurações ficam na pasta do Zakuro,
-`%APPDATA%\zakuro`.
+`%APPDATA%\zakuro` (no macOS, `~/Library/Application Support/zakuro`).
 
 Configuração recomendada (Escape abre o menu):
 
@@ -162,6 +183,9 @@ Padrões do teclado, todos alteráveis em Settings. Controles também funcionam.
 | Circle Pad | I J K L | | Acelerar | segurar Tab |
 | C-Stick | T F G H | | Tela de toque | mouse |
 
+Num teclado de Mac, as teclas F precisam do Fn, a não ser que estejam como
+teclas de função padrão em Ajustes do Sistema, Teclado.
+
 ## Extraindo assets
 
 O `tools/extract` tira os arquivos do jogo da sua ROM e converte: texturas
@@ -207,6 +231,12 @@ imagem não muda (em inglês): [MODDING.md](docs/MODDING.md).
   momento. Ligue o **30 FPS** (Enhancements) e salve um state de novo.
 - **A imagem está comprimida ou esticada**: o cheat de Widescreen e o Top
   screen shape precisam estar no mesmo formato, ou os dois desligados.
+- **macOS: "Could not start Vulkan"**: o MoltenVK não está instalado, rode
+  `brew install molten-vk`. Um MoltenVK em outro lugar pode ser indicado com
+  `ZAKURO_VULKAN_LIB=/caminho/para/libMoltenVK.dylib`.
+- **macOS: uma janela pedindo para instalar as ferramentas de
+  desenvolvedor**: a compilação procurou o clang ou o git; instale por ela, ou
+  com `xcode-select --install`.
 
 ## Como funciona
 

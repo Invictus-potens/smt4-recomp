@@ -140,6 +140,7 @@ Replacing images with texture packs, and `cargo fit-texture` (`tools/fit-texture
 makes and installs a picture for one: [MODDING.md](MODDING.md).
 
 Zakuro also takes files that replace the game's own at their RomFS paths, in
-`%APPDATA%\zakuro\mods\00040000000E5C00\romfs\` (a translated `.mbm`, a new
+`%APPDATA%\zakuro\mods\00040000000E5C00\romfs\` (on macOS, under
+`~/Library/Application Support/zakuro`; a translated `.mbm`, a new
 model), but writing files back in the game's formats (text back to `.mbm`,
 a PNG back to `.stex`) isn't done yet.

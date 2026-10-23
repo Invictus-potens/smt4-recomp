@@ -116,11 +116,13 @@ fn pack_name(extracted: &Path) -> String {
 
 fn mods_folder() -> PathBuf {
     let env = |key: &str| std::env::var_os(key).filter(|v| !v.is_empty()).map(PathBuf::from);
+    let home = || env("HOME").unwrap_or_else(|| PathBuf::from("."));
     let base = if cfg!(windows) {
         env("APPDATA").unwrap_or_else(|| fail("APPDATA is not set")).join("zakuro")
+    } else if cfg!(target_os = "macos") {
+        home().join("Library").join("Application Support").join("zakuro")
     } else {
-        let home = env("HOME").unwrap_or_else(|| PathBuf::from("."));
-        env("XDG_DATA_HOME").unwrap_or_else(|| home.join(".local").join("share")).join("zakuro")
+        env("XDG_DATA_HOME").unwrap_or_else(|| home().join(".local").join("share")).join("zakuro")
     };
     base.join("mods").join(TITLE_ID).join("textures")
 }

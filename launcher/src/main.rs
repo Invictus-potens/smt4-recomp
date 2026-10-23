@@ -53,11 +53,13 @@ impl Default for Config {
 }
 
 fn data_dir() -> PathBuf {
-    let base = std::env::var_os("APPDATA")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
-        .unwrap_or_else(|| PathBuf::from("."));
-    base.join("smt4-recomp")
+    let home = || std::env::var_os("HOME").map(PathBuf::from);
+    let base = if cfg!(target_os = "macos") {
+        home().map(|home| home.join("Library").join("Application Support"))
+    } else {
+        std::env::var_os("APPDATA").map(PathBuf::from).or_else(|| home().map(|home| home.join(".config")))
+    };
+    base.unwrap_or_else(|| PathBuf::from(".")).join("smt4-recomp")
 }
 
 impl Config {
@@ -125,6 +127,10 @@ struct Tool {
     hint: String,
     /// a winget package that installs it
     winget: Option<&'static str>,
+    /// on macOS, a command that installs it, run as a job
+    mac_install: Option<&'static [&'static str]>,
+    /// whether the build needs it, rather than only the game
+    for_build: bool,
 }
 
 #[derive(Clone, Default)]
@@ -136,7 +142,7 @@ struct Tools {
 
 impl Tools {
     fn ok(&self) -> bool {
-        !self.list.is_empty() && self.list.iter().all(|tool| tool.found.is_some())
+        !self.list.is_empty() && self.list.iter().filter(|tool| tool.for_build).all(|tool| tool.found.is_some())
     }
 }
 
@@ -161,8 +167,13 @@ fn cargo_bin() -> Option<PathBuf> {
     Some(PathBuf::from(home).join(".cargo").join("bin"))
 }
 
+/// where Homebrew puts what it installs, which a launcher opened from the
+/// Finder doesn't have on PATH
+const HOMEBREW_BINS: [&str; 2] = ["/opt/homebrew/bin", "/usr/local/bin"];
+
 /// a 64-bit gcc: on PATH, or where winget's WinLibs and MSYS2 put theirs,
-/// skipping old 32-bit MinGW ones that may come first on PATH
+/// skipping old 32-bit MinGW ones that may come first on PATH. on macOS,
+/// Apple's clang answers to gcc
 fn find_gcc() -> GccSearch {
     let name = if cfg!(windows) { "gcc.exe" } else { "gcc" };
     let mut dirs: Vec<PathBuf> = std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect()).unwrap_or_default();
@@ -177,7 +188,11 @@ fn find_gcc() -> GccSearch {
         }
     }
     dirs.extend([r"C:\msys64\ucrt64\bin", r"C:\msys64\mingw64\bin"].map(PathBuf::from));
-    let is_64 = |gcc: &PathBuf| output(gcc, &["-dumpmachine"]).is_some_and(|machine| machine.starts_with("x86_64"));
+    // anything builds for this machine off x86-64, gcc on Apple Silicon is
+    // arm64-apple-darwin
+    let is_64 = |gcc: &PathBuf| {
+        output(gcc, &["-dumpmachine"]).is_some_and(|machine| machine.starts_with("x86_64") || !cfg!(target_arch = "x86_64"))
+    };
     let all: Vec<PathBuf> = dirs.into_iter().map(|dir| dir.join(name)).filter(|gcc| gcc.is_file()).collect();
     match all.iter().find(|gcc| !is_strawberry(gcc) && is_64(gcc)) {
         Some(gcc) => GccSearch::Found(gcc.clone()),
@@ -199,14 +214,21 @@ fn is_strawberry(gcc: &Path) -> bool {
     gcc.to_string_lossy().to_lowercase().contains("strawberry")
 }
 
+/// Apple's command line tools, clang, ar and git, which macOS offers to
+/// install in a window of its own
+const XCODE_SELECT: &[&str] = &["xcode-select", "--install"];
+
 fn check_tools() -> Tools {
+    let mac = cfg!(target_os = "macos");
     let mut tools = Tools::default();
     let git = output("git", &["--version"]);
     tools.list.push(Tool {
         name: "Git",
         found: git,
-        hint: "Downloads this project's source.".into(),
+        hint: if mac { "Downloads this project's source (Apple's command line tools)." } else { "Downloads this project's source." }.into(),
         winget: Some("Git.Git"),
+        mac_install: Some(XCODE_SELECT),
+        for_build: true,
     });
 
     let cargo = cargo_bin().map(|bin| bin.join(if cfg!(windows) { "rustc.exe" } else { "rustc" }));
@@ -222,6 +244,8 @@ fn check_tools() -> Tools {
             "Builds the program.".into()
         },
         winget: Some("Rustlang.Rustup"),
+        mac_install: Some(&["sh", "-c", "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"]),
+        for_build: true,
     });
 
     let search = find_gcc();
@@ -230,6 +254,7 @@ fn check_tools() -> Tools {
             "Only {} found, from Strawberry Perl: its linker is too old for Rust. Install WinLibs.",
             gcc.display()
         ),
+        _ if mac => "Compiles the recompiled game code (Apple's command line tools).".into(),
         _ => "Compiles the recompiled game code (MinGW-w64).".into(),
     };
     tools.gcc = match search {
@@ -237,11 +262,29 @@ fn check_tools() -> Tools {
         _ => None,
     };
     tools.list.push(Tool {
-        name: "64-bit GCC",
+        name: if mac { "C compiler" } else { "64-bit GCC" },
         found: tools.gcc.as_ref().map(|p| p.display().to_string()),
         hint,
         winget: Some("BrechtSanders.WinLibs.POSIX.UCRT"),
+        mac_install: Some(XCODE_SELECT),
+        for_build: true,
     });
+
+    // the game draws through Vulkan, which macOS has only by MoltenVK
+    if mac {
+        let lib = HOMEBREW_BINS
+            .iter()
+            .map(|bin| Path::new(bin).with_file_name("lib").join("libMoltenVK.dylib"))
+            .find(|lib| lib.is_file());
+        tools.list.push(Tool {
+            name: "MoltenVK",
+            found: lib.map(|lib| lib.display().to_string()),
+            hint: "Vulkan for the game to draw with, from Homebrew (brew.sh).".into(),
+            winget: None,
+            mac_install: Some(&["brew", "install", "molten-vk"]),
+            for_build: false,
+        });
+    }
 
     tools
 }
@@ -306,7 +349,7 @@ fn private_log(lines: &[String]) -> Vec<String> {
     let home = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")).unwrap_or_default();
     lines
         .iter()
-        .map(|line| if home.len() > 3 { line.replace(&home, "%USERPROFILE%") } else { line.clone() })
+        .map(|line| if home.len() > 3 { line.replace(&home, if cfg!(windows) { "%USERPROFILE%" } else { "~" }) } else { line.clone() })
         .collect()
 }
 
@@ -483,8 +526,10 @@ fn source_around_exe() -> Option<PathBuf> {
 }
 
 fn default_source() -> PathBuf {
-    let base = std::env::var_os("LOCALAPPDATA").map(PathBuf::from).unwrap_or_else(data_dir);
-    base.join("smt4-recomp").join("source")
+    match std::env::var_os("LOCALAPPDATA") {
+        Some(local) => PathBuf::from(local).join("smt4-recomp").join("source"),
+        None => data_dir().join("source"),
+    }
 }
 
 fn is_source(dir: &Path) -> bool {
@@ -566,6 +611,9 @@ impl Launcher {
             dirs.extend(gcc.parent().map(Path::to_path_buf));
         }
         dirs.extend(cargo_bin());
+        if cfg!(target_os = "macos") {
+            dirs.extend(HOMEBREW_BINS.map(PathBuf::from));
+        }
         dirs.extend(std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect::<Vec<_>>()).unwrap_or_default());
         std::env::join_paths(dirs).unwrap_or_default()
     }
@@ -738,6 +786,16 @@ impl eframe::App for Launcher {
                                                 command.args(["default", "stable-x86_64-pc-windows-gnu"]);
                                                 run_job(self.job.clone(), ctx.clone(), "Switching Rust to GNU", command);
                                             }
+                                        } else if let Some(install) = tool.mac_install.filter(|_| cfg!(target_os = "macos")) {
+                                            if ui.add_enabled(!running, egui::Button::new(format!("Install ({})", install.join(" ")))).clicked() {
+                                                let mut command = Command::new(install[0]);
+                                                command.args(&install[1..]).env("PATH", self.env_path(tools));
+                                                run_job(self.job.clone(), ctx.clone(), &format!("Installing {}", tool.name), command);
+                                                self.message = Some(format!(
+                                                    "Installing {}. When it's done, press Check again (Rust may need the launcher reopened).",
+                                                    tool.name
+                                                ));
+                                            }
                                         } else if let Some(id) = tool.winget {
                                             if cfg!(windows) && ui.button(format!("Install ({id})")).clicked() {
                                                 // in a console of its own, so its prompts show
@@ -843,7 +901,7 @@ impl eframe::App for Launcher {
                     if built && !running {
                         status(ui, true, "The game is built.");
                     } else if !running {
-                        ui.label("The first build takes 20 minutes or more. You can keep using the PC meanwhile.");
+                        ui.label("The first build takes 20 minutes or more. You can keep using the computer meanwhile.");
                     }
                     ui.horizontal(|ui| {
                         if built {
@@ -901,7 +959,11 @@ impl eframe::App for Launcher {
                             if ui.button("Copy the log").clicked() {
                                 let text = self.job.lock().unwrap().log.join("\n");
                                 ui.ctx().copy_text(text);
-                                self.message = Some("The log is copied: paste it in the issue with Ctrl+V.".into());
+                                self.message = Some(if cfg!(target_os = "macos") {
+                                    "The log is copied: paste it in the issue with Cmd+V."
+                                } else {
+                                    "The log is copied: paste it in the issue with Ctrl+V."
+                                }.into());
                             }
                         });
                     }
@@ -959,7 +1021,7 @@ mod tests {
         assert!(url.len() <= MAX_ISSUE_URL, "{}", url.len());
         assert!(url.contains("line%202999"), "the end of the log is kept");
         assert!(!url.contains(&percent_encode(&home)), "the home folder is hidden");
-        assert!(url.contains("%25USERPROFILE%25"));
+        assert!(url.contains(if cfg!(windows) { "%25USERPROFILE%25" } else { "~%5Cdev" }));
         let short = issue_url("", None, &[], None);
         assert!(short.contains("nothing%20ran%20yet"));
     }

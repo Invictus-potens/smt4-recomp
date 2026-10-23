@@ -27,9 +27,12 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 const TITLE_ID: u64 = 0x0004_0000_000E_5C00;
-const RECOMP_URL: &str = "https://github.com/fearkov/3dsrecomp";
-/// the 3dsrecomp version the overrides and patches were made and tested with
-const RECOMP_REV: &str = "c3f21f9";
+/// 3dsrecomp, from the fork with the macOS changes until fearkov/3dsrecomp
+/// has them; SMT4_RECOMP_URL names another
+const RECOMP_URL: &str = "https://github.com/Tony0000/3dsrecomp";
+/// the 3dsrecomp version the overrides and patches were made and tested with,
+/// c3f21f9 and the macOS changes; SMT4_RECOMP_REV names another
+const RECOMP_REV: &str = "a5b2eef";
 const NAME: &str = "smt4";
 const EXE: &str = std::env::consts::EXE_SUFFIX;
 
@@ -50,7 +53,9 @@ minutes or more, into code/), 5. patching the generated C, 6. the program,
 target/release/smt4(.exe), 7. Zakuro's cheats file. Done steps are skipped.
 Nothing it makes is meant to be shared: code/ and the program hold the game's
 code. CC and AR pick the C compiler and archiver; without them, it uses the
-first 64-bit gcc on PATH, or else one installed by winget (WinLibs) or MSYS2.";
+first 64-bit gcc on PATH, or else one installed by winget (WinLibs) or MSYS2.
+On macOS that is Apple's clang, from \"xcode-select --install\".
+SMT4_RECOMP_URL and SMT4_RECOMP_REV build another 3dsrecomp.";
 
 fn step(text: &str) {
     println!("\n== {text}");
@@ -140,7 +145,17 @@ fn is_strawberry(gcc: &Path) -> bool {
     gcc.to_string_lossy().to_lowercase().contains("strawberry")
 }
 
-const INSTALL_GCC: &str = "Install MinGW-w64 GCC, for example with \"winget install BrechtSanders.WinLibs.POSIX.UCRT\"";
+const INSTALL_GCC: &str = if cfg!(target_os = "macos") {
+    "Install Apple's command line tools, with \"xcode-select --install\""
+} else {
+    "Install MinGW-w64 GCC, for example with \"winget install BrechtSanders.WinLibs.POSIX.UCRT\""
+};
+
+/// the 3dsrecomp to build: where from, and which version
+fn recomp_source() -> (String, String) {
+    let env = |key: &str, default: &str| std::env::var(key).ok().filter(|v| !v.is_empty()).unwrap_or_else(|| default.to_owned());
+    (env("SMT4_RECOMP_URL", RECOMP_URL), env("SMT4_RECOMP_REV", RECOMP_REV))
+}
 
 /// whether gcc builds 64-bit x86 code (or anything, off x86-64)
 fn builds_64bit(gcc: &Path) -> bool {
@@ -211,10 +226,7 @@ fn find_compiler() -> (String, String) {
             let ar = std::env::var("AR").unwrap_or_else(|_| ar_next_to(gcc));
             (gcc.display().to_string(), ar)
         }
-        None if candidates.is_empty() => fail(
-            "gcc not found. On Windows, install MinGW-w64 GCC, for example with \
-             \"winget install BrechtSanders.WinLibs.POSIX.UCRT\", or set CC and AR to it",
-        ),
+        None if candidates.is_empty() => fail(&format!("gcc not found. {INSTALL_GCC}, or set CC and AR to one")),
         None => fail(&format!(
             "no usable 64-bit gcc found, only {} (Strawberry Perl's gcc has a linker too old for \
              current Rust). {INSTALL_GCC}, or set CC and AR to a 64-bit one",
@@ -263,6 +275,21 @@ fn check_tools() {
         );
     }
     use_compiler(&cc, &ar);
+    if cfg!(target_os = "macos") {
+        // the C built for the macOS rustc builds for, rather than for the one
+        // it runs on, so the objects link with the program without a warning
+        // for each
+        if std::env::var_os("MACOSX_DEPLOYMENT_TARGET").is_none() {
+            set_env("MACOSX_DEPLOYMENT_TARGET", "11.0");
+        }
+        // the game draws through Vulkan, which macOS has only by MoltenVK
+        let molten = ["/opt/homebrew/lib", "/usr/local/lib"]
+            .iter()
+            .any(|dir| ["libMoltenVK.dylib", "libvulkan.1.dylib"].iter().any(|lib| Path::new(dir).join(lib).is_file()));
+        if !molten {
+            println!("warning: MoltenVK not found, the game needs it to start: brew install molten-vk");
+        }
+    }
     // run by `cargo run`, this program has this package's variables, which
     // aren't the game's or 3dsrecomp's
     for (key, _) in std::env::vars_os() {
@@ -315,26 +342,35 @@ fn check_rom(rom: &Path) {
 }
 
 fn build_3dsrecomp(root: &Path, work: &Path) -> PathBuf {
-    step(&format!("3. 3dsrecomp ({RECOMP_REV})"));
+    let (url, rev) = recomp_source();
+    step(&format!("3. 3dsrecomp ({rev})"));
     let src = work.join("3dsrecomp");
     if !src.join(".git").is_dir() {
         let _ = std::fs::create_dir_all(work);
-        run("git", &[OsStr::new("clone"), OsStr::new("--quiet"), OsStr::new(RECOMP_URL), src.as_os_str()], root);
+        run("git", &[OsStr::new("clone"), OsStr::new("--quiet"), OsStr::new(&url), src.as_os_str()], root);
     }
-    let rev = format!("{RECOMP_REV}^{{commit}}");
     let src_str = src.to_string_lossy();
-    if output("git", &["-C", &src_str, "rev-parse", "--verify", "--quiet", &rev]).is_empty() {
+    // a clone from before 3dsrecomp came from elsewhere
+    if output("git", &["-C", &src_str, "remote", "get-url", "origin"]) != url {
+        run("git", &["remote", "set-url", "origin", url.as_str()], &src);
+    }
+    let commit = format!("{rev}^{{commit}}");
+    if output("git", &["-C", &src_str, "rev-parse", "--verify", "--quiet", &commit]).is_empty() {
         run("git", &["fetch", "--quiet", "origin"], &src);
     }
-    run("git", &["checkout", "--quiet", RECOMP_REV], &src);
+    run("git", &["checkout", "--quiet", rev.as_str()], &src);
     run("cargo", &["build", "--release", "--quiet"], &src);
     src.join("target").join("release").join(format!("3dsrecomp{EXE}"))
 }
 
-/// what step 4's output depends on
+/// what step 4's output depends on, the system and the compiler too, so a
+/// code/ built on another doesn't pass for this one's
 fn inputs_stamp(root: &Path, rom: &Path) -> String {
     let mut h = sha256::Sha256::new();
-    h.update(RECOMP_REV.as_bytes());
+    h.update(recomp_source().1.as_bytes());
+    let rustc = output("rustc", &["-vV"]);
+    h.update(rustc.lines().find_map(|l| l.strip_prefix("host: ")).unwrap_or("").as_bytes());
+    h.update(output(std::env::var("CC").unwrap_or_default(), &["-dumpmachine"]).as_bytes());
     h.update(rom.metadata().map(|m| m.len()).unwrap_or(0).to_string().as_bytes());
     for path in sorted_files(&root.join("overrides"), |name| name.ends_with(".c") || name.ends_with(".h")) {
         h.update(path.file_name().unwrap().to_string_lossy().as_bytes());

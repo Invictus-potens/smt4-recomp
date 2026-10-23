@@ -11,7 +11,8 @@
 //!
 //! Then the patched files are recompiled with the flags 3dsrecomp uses and put
 //! into code/librecomp.a, so `cargo build` picks them up. CC and AR pick the
-//! compiler and archiver (default gcc and ar, MinGW-w64's on Windows).
+//! compiler and archiver (default gcc and ar, MinGW-w64's on Windows, Apple's
+//! clang and ar on macOS).
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -180,8 +181,9 @@ fn rebuild(root: &Path, code: &Path, files: Vec<PathBuf>, cc: &str, ar: &str) {
         objects.push(obj);
     }
     // archive members are named after the file, so this replaces the objects
-    // 3dsrecomp put there
-    let mut args: Vec<std::ffi::OsString> = vec!["r".into(), code.join("librecomp.a").into()];
+    // 3dsrecomp put there, and s writes the index again, without which
+    // Apple's linker turns the archive down
+    let mut args: Vec<std::ffi::OsString> = vec!["rs".into(), code.join("librecomp.a").into()];
     args.extend(objects.iter().map(Into::into));
     run(ar, &args, root);
     for obj in &objects {

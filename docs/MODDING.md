@@ -38,7 +38,8 @@ Everything here works with the plain program from `cargo build-game`. You need:
 
    It works out the name Zakuro looks for (from `pack-names.txt`), fits your
    picture in, and saves it in
-   `%APPDATA%\zakuro\mods\00040000000E5C00\textures\`.
+   `%APPDATA%\zakuro\mods\00040000000E5C00\textures\` (on macOS,
+   `~/Library/Application Support/zakuro/mods/00040000000E5C00/textures/`).
 
 3. **Restart the game.** Zakuro reads the pack when the game starts; its log
    says `texture pack in ..., N pictures`.
@@ -135,7 +136,8 @@ works for anyone with the same game (USA), in Zakuro, Citra or Azahar.
 ## Other kinds of mods
 
 Zakuro also takes files that replace the game's own, at their RomFS paths, in
-`%APPDATA%\zakuro\mods\00040000000E5C00\romfs\`, and `.ips`/`.bps` patches to
+`%APPDATA%\zakuro\mods\00040000000E5C00\romfs\` (on macOS, under
+`~/Library/Application Support/zakuro`), and `.ips`/`.bps` patches to
 them in `romfs_ext\`. That's the way for text (`.mbm`), models and sound, but
 it needs the files in the game's own formats, and the extractor doesn't write
 those back yet.
