@@ -23,7 +23,8 @@ fn main() -> eframe::Result {
         viewport: egui::ViewportBuilder::default()
             .with_title("Shin Megami Tensei IV for PC")
             .with_inner_size([620.0, 640.0])
-            .with_min_inner_size([480.0, 420.0]),
+            .with_min_inner_size([480.0, 420.0])
+            .with_icon(eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).unwrap_or_default()),
         ..Default::default()
     };
     eframe::run_native("smt4-launcher", options, Box::new(|cc| Ok(Box::new(Launcher::new(&cc.egui_ctx)))))
@@ -717,7 +718,7 @@ impl eframe::App for Launcher {
                 ui.horizontal(|ui| {
                     ui.hyperlink_to("Project page", REPO);
                     ui.label("·");
-                    ui.hyperlink_to("Report a problem", format!("{REPO}/issues"));
+                    ui.hyperlink_to("Report a problem", format!("{REPO}/issues/new"));
                 });
             });
         });
