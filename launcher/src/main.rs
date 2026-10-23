@@ -33,10 +33,23 @@ fn main() -> eframe::Result {
 // ---------------------------------------------------------------------------
 // settings
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct Config {
     rom: Option<PathBuf>,
     source: Option<PathBuf>,
+    /// look for project updates when the launcher opens
+    #[serde(default = "yes")]
+    check_updates: bool,
+}
+
+fn yes() -> bool {
+    true
+}
+
+impl Default for Config {
+    fn default() -> Config {
+        Config { rom: None, source: None, check_updates: true }
+    }
 }
 
 fn data_dir() -> PathBuf {
@@ -234,6 +247,44 @@ fn check_tools() -> Tools {
 }
 
 // ---------------------------------------------------------------------------
+// updates: the project's git checkout against its remote
+
+#[derive(Clone, Default)]
+enum Updates {
+    #[default]
+    Unknown,
+    Checking,
+    UpToDate,
+    /// the new commits' subjects, newest first
+    Available(Vec<String>),
+    Failed(String),
+}
+
+/// fetches the remote and lists the commits the checkout doesn't have yet
+fn check_updates(source: &Path) -> Updates {
+    let git = |args: &[&str]| {
+        quiet(Command::new("git").args(args).current_dir(source).stdin(Stdio::null()))
+            .output()
+            .map_err(|error| error.to_string())
+            .and_then(|out| {
+                if out.status.success() {
+                    Ok(String::from_utf8_lossy(&out.stdout).trim().to_owned())
+                } else {
+                    Err(String::from_utf8_lossy(&out.stderr).trim().lines().last().unwrap_or("git failed").to_owned())
+                }
+            })
+    };
+    if let Err(error) = git(&["fetch", "--quiet"]) {
+        return Updates::Failed(error);
+    }
+    match git(&["log", "--format=%s", "HEAD..@{upstream}"]) {
+        Ok(log) if log.is_empty() => Updates::UpToDate,
+        Ok(log) => Updates::Available(log.lines().map(str::to_owned).collect()),
+        Err(error) => Updates::Failed(error),
+    }
+}
+
+// ---------------------------------------------------------------------------
 // jobs: clone, update, build, each a program whose output is shown
 
 #[derive(Default)]
@@ -341,6 +392,11 @@ struct Launcher {
     job: Arc<Mutex<Job>>,
     show_log: bool,
     message: Option<String>,
+    updates: Arc<Mutex<Updates>>,
+    /// what to do once the running job works: rebuild after an update
+    then_build: bool,
+    /// the project was updated since the game was last built
+    stale: bool,
 }
 
 /// the project folder the launcher sits in, when it's run from a checkout
@@ -377,9 +433,30 @@ impl Launcher {
             job: Arc::new(Mutex::new(Job::default())),
             show_log: false,
             message: None,
+            updates: Arc::new(Mutex::new(Updates::Unknown)),
+            then_build: false,
+            stale: false,
         };
         launcher.refresh_tools(ctx);
+        if launcher.config.check_updates {
+            launcher.refresh_updates(ctx);
+        }
         launcher
+    }
+
+    fn refresh_updates(&self, ctx: &egui::Context) {
+        let source = self.source();
+        if !source.join(".git").exists() {
+            return;
+        }
+        let updates = self.updates.clone();
+        let ctx = ctx.clone();
+        *updates.lock().unwrap() = Updates::Checking;
+        std::thread::spawn(move || {
+            let found = check_updates(&source);
+            *updates.lock().unwrap() = found;
+            ctx.request_repaint();
+        });
     }
 
     fn refresh_tools(&self, ctx: &egui::Context) {
@@ -489,6 +566,18 @@ impl eframe::App for Launcher {
             let j = self.job.lock().unwrap();
             (j.running, j.what.clone(), j.result, j.progress(), j.step)
         };
+        if !running && self.then_build {
+            self.then_build = false;
+            if job_result == Some(true) {
+                *self.updates.lock().unwrap() = Updates::UpToDate;
+                self.stale = true;
+                if let Some(tools) = tools.as_ref().filter(|t| t.ok()) {
+                    self.start_build(ctx, tools);
+                    self.stale = false;
+                }
+            }
+        }
+        let updates = self.updates.lock().unwrap().clone();
         let source_ok = is_source(&self.source());
         let rom_ok = self.config.rom.is_some() && self.rom_error.is_none();
         let built = self.program().is_file();
@@ -611,8 +700,24 @@ impl eframe::App for Launcher {
                                 self.start_clone(ctx);
                             }
                         } else if cloned {
-                            if ui.add_enabled(!running && git, egui::Button::new("Update")).clicked() {
-                                self.start_update(ctx);
+                            match &updates {
+                                Updates::Checking => {
+                                    ui.spinner();
+                                    ui.label("Looking for updates…");
+                                }
+                                Updates::UpToDate => {
+                                    ui.weak("Up to date.");
+                                }
+                                Updates::Available(_) => {}
+                                Updates::Failed(error) => {
+                                    ui.weak(format!("Couldn't look for updates: {error}"));
+                                }
+                                Updates::Unknown => {}
+                            }
+                            if !matches!(updates, Updates::Available(_) | Updates::Checking)
+                                && ui.add_enabled(!running && git, egui::Button::new("Check for updates")).clicked()
+                            {
+                                self.refresh_updates(ctx);
                             }
                         } else {
                             ui.weak("Not a git download, so Update can't refresh it; download a newer release to update.");
@@ -621,9 +726,36 @@ impl eframe::App for Launcher {
                             if let Some(folder) = rfd::FileDialog::new().pick_folder() {
                                 self.config.source = Some(folder);
                                 self.config.save();
+                                *self.updates.lock().unwrap() = Updates::Unknown;
+                                if self.config.check_updates {
+                                    self.refresh_updates(ctx);
+                                }
                             }
                         }
                     });
+                    if let Updates::Available(commits) = &updates {
+                        ui.add_space(4.0);
+                        let what = if commits.len() == 1 { "1 update".to_owned() } else { format!("{} updates", commits.len()) };
+                        ui.colored_label(egui::Color32::from_rgb(240, 190, 80), format!("{what} available:"));
+                        for subject in commits.iter().take(8) {
+                            ui.add(egui::Label::new(format!("• {subject}")).truncate());
+                        }
+                        if commits.len() > 8 {
+                            ui.weak(format!("and {} more", commits.len() - 8));
+                        }
+                        let label = if built { "Update and rebuild" } else { "Update" };
+                        let git = tools.as_ref().is_some_and(|t| t.list.first().is_some_and(|g| g.found.is_some()));
+                        if ui.add_enabled(!running && git, egui::Button::new(label)).clicked() {
+                            self.start_update(ctx);
+                            self.then_build = built;
+                        }
+                    }
+                    if self.stale && !running {
+                        ui.weak("The project was updated: press Rebuild to use it.");
+                    }
+                    if ui.checkbox(&mut self.config.check_updates, "Look for updates when the launcher opens").changed() {
+                        self.config.save();
+                    }
                 });
 
                 // 4. build and play
@@ -728,6 +860,42 @@ impl eframe::App for Launcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// a checkout behind its remote by two commits sees them, then none once pulled
+    #[test]
+    fn finds_new_commits() {
+        let dir = std::env::temp_dir().join(format!("smt4-launcher-updates-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let git = |cwd: &Path, args: &[&str]| {
+            let ok = Command::new("git")
+                .args(["-c", "user.name=t", "-c", "user.email=t@t", "-c", "init.defaultBranch=main"])
+                .args(args)
+                .current_dir(cwd)
+                .output()
+                .unwrap()
+                .status
+                .success();
+            assert!(ok, "git {args:?}");
+        };
+        let (remote, ours, theirs) = (dir.join("remote.git"), dir.join("ours"), dir.join("theirs"));
+        git(&dir, &["init", "--bare", "remote.git"]);
+        git(&dir, &["clone", "-q", "remote.git", "theirs"]);
+        git(&theirs, &["commit", "-q", "--allow-empty", "-m", "first"]);
+        git(&theirs, &["push", "-q", "origin", "HEAD:main"]);
+        git(&dir, &["clone", "-q", "--depth", "1", &format!("file://{}", remote.display()), "ours"]);
+        assert!(matches!(check_updates(&ours), Updates::UpToDate));
+        git(&theirs, &["commit", "-q", "--allow-empty", "-m", "second"]);
+        git(&theirs, &["commit", "-q", "--allow-empty", "-m", "third"]);
+        git(&theirs, &["push", "-q", "origin", "HEAD:main"]);
+        match check_updates(&ours) {
+            Updates::Available(commits) => assert_eq!(commits, ["third", "second"]),
+            _ => panic!("no updates seen"),
+        }
+        git(&ours, &["pull", "-q", "--ff-only"]);
+        assert!(matches!(check_updates(&ours), Updates::UpToDate));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     /// SMT4_ROM_DIR=<folder with the game> cargo test
     #[test]
