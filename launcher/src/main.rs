@@ -285,6 +285,83 @@ fn check_updates(source: &Path) -> Updates {
 }
 
 // ---------------------------------------------------------------------------
+// reporting a problem: a new issue on GitHub, filled in with the log
+
+/// the longest issue link: GitHub fails on ones much past 6000 characters
+const MAX_ISSUE_URL: usize = 6000;
+
+fn percent_encode(text: &str) -> String {
+    let mut out = String::with_capacity(text.len() * 3);
+    for byte in text.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(byte as char),
+            _ => out.push_str(&format!("%{byte:02X}")),
+        }
+    }
+    out
+}
+
+/// the log with the user's home folder hidden, as it holds their name
+fn private_log(lines: &[String]) -> Vec<String> {
+    let home = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")).unwrap_or_default();
+    lines
+        .iter()
+        .map(|line| if home.len() > 3 { line.replace(&home, "%USERPROFILE%") } else { line.clone() })
+        .collect()
+}
+
+/// a link to a new issue with the launcher's version, the tools found and
+/// as much of the end of the log as fits
+fn issue_url(what: &str, result: Option<bool>, log: &[String], tools: Option<&Tools>) -> String {
+    let log = private_log(log);
+    let mut about = vec![
+        format!("- Launcher: {}", env!("CARGO_PKG_VERSION")),
+        format!("- System: {} {}", std::env::consts::OS, std::env::consts::ARCH),
+    ];
+    if let Some(tools) = tools {
+        for tool in &tools.list {
+            let found = tool.found.as_deref().and_then(|f| f.lines().next()).unwrap_or("missing");
+            about.push(format!("- {}: {}", tool.name, private_log(&[found.to_owned()])[0]));
+        }
+    }
+    if !what.is_empty() {
+        let state = match result {
+            Some(true) => "worked",
+            Some(false) => "failed",
+            None => "running",
+        };
+        about.push(format!("- Last step: {what} ({state})"));
+    }
+    let body = |shown: &[String], cut: usize| {
+        let note = if cut > 0 {
+            format!("The first {cut} lines are cut to fit; the whole log is copied, paste it below if it helps.\n\n")
+        } else {
+            String::new()
+        };
+        let log = if shown.is_empty() {
+            "(nothing ran yet)\n".to_owned()
+        } else {
+            format!("```\n{}\n```\n", shown.join("\n"))
+        };
+        format!(
+            "### What happened\n\n<!-- What were you doing, and what went wrong? -->\n\n### Setup\n\n{}\n\n### Log\n\n{note}{log}",
+            about.join("\n")
+        )
+    };
+    let url = |body: &str| format!("{REPO}/issues/new?title={}&body={}", percent_encode("Problem: "), percent_encode(body));
+    // drop lines from the start of the log until the link fits
+    let mut cut = 0;
+    loop {
+        let link = url(&body(&log[cut..], cut));
+        if link.len() <= MAX_ISSUE_URL || cut >= log.len() {
+            return link;
+        }
+        cut += (log.len() - cut).div_ceil(8).max(1);
+        cut = cut.min(log.len());
+    }
+}
+
+// ---------------------------------------------------------------------------
 // jobs: clone, update, build, each a program whose output is shown
 
 #[derive(Default)]
@@ -822,8 +899,7 @@ impl eframe::App for Launcher {
                         ui.horizontal(|ui| {
                             ui.checkbox(&mut self.show_log, "Show the log");
                             if ui.button("Copy the log").clicked() {
-                                let text = self.job.lock().unwrap().log.join("
-");
+                                let text = self.job.lock().unwrap().log.join("\n");
                                 ui.ctx().copy_text(text);
                                 self.message = Some("The log is copied: paste it in the issue with Ctrl+V.".into());
                             }
@@ -850,7 +926,20 @@ impl eframe::App for Launcher {
                 ui.horizontal(|ui| {
                     ui.hyperlink_to("Project page", REPO);
                     ui.label("·");
-                    ui.hyperlink_to("Report a problem", format!("{REPO}/issues/new"));
+                    let report = ui.link("Report a problem").on_hover_text("Opens a new issue on GitHub with the log filled in");
+                    if report.clicked() {
+                        let (url, whole) = {
+                            let job = self.job.lock().unwrap();
+                            (issue_url(&job.what, job.result, &job.log, tools.as_ref()), private_log(&job.log).join("\n"))
+                        };
+                        if !whole.is_empty() {
+                            ui.ctx().copy_text(whole);
+                        }
+                        ui.ctx().open_url(egui::OpenUrl::new_tab(url));
+                        self.message = Some(
+                            "A new issue is open in your browser with the log. Describe what happened, then press Create.".into(),
+                        );
+                    }
                 });
             });
         });
@@ -860,6 +949,20 @@ impl eframe::App for Launcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn issue_links_fit_and_hide_the_home_folder() {
+        assert_eq!(percent_encode("a b/é\n"), "a%20b%2F%C3%A9%0A");
+        let home = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")).unwrap();
+        let log: Vec<String> = (0..3000).map(|i| format!("line {i} in {home}\\dev")).collect();
+        let url = issue_url("Building the game", Some(false), &log, None);
+        assert!(url.len() <= MAX_ISSUE_URL, "{}", url.len());
+        assert!(url.contains("line%202999"), "the end of the log is kept");
+        assert!(!url.contains(&percent_encode(&home)), "the home folder is hidden");
+        assert!(url.contains("%25USERPROFILE%25"));
+        let short = issue_url("", None, &[], None);
+        assert!(short.contains("nothing%20ran%20yet"));
+    }
 
     /// a checkout behind its remote by two commits sees them, then none once pulled
     #[test]
