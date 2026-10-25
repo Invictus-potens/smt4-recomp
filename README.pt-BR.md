@@ -105,6 +105,26 @@ depois só refaz o que mudou. `cargo build-game --help` mostra as opções.
 
 No fim, o programa fica em `target\release\smt4.exe`.
 
+### Compilando no Linux
+
+O launcher é um programa de Windows: no Wine ele não consegue instalar as
+ferramentas (não existe winget) e o jogo não pode ser compilado lá, então ele
+avisa e aponta para cá. Compile no próprio Linux:
+
+```
+sudo apt install git build-essential   # ou o equivalente da sua distribuição
+curl https://sh.rustup.rs -sSf | sh    # Rust
+git clone https://github.com/Invictus-potens/smt4-recomp
+cd smt4-recomp
+cargo build-game "/caminho/para/Shin Megami Tensei IV (USA).3ds"
+./target/release/smt4 "/caminho/para/Shin Megami Tensei IV (USA).3ds"
+```
+
+O Zakuro e o builder suportam Linux, mas isso ainda não foi testado nele:
+[conte](https://github.com/Invictus-potens/smt4-recomp/issues) como foi. Outro
+caminho que já funciona: compilar num PC com Windows e copiar a pasta do
+projeto; a versão de Windows roda bem no Wine.
+
 ## Jogando
 
 ```

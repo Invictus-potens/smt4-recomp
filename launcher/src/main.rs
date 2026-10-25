@@ -161,6 +161,45 @@ fn cargo_bin() -> Option<PathBuf> {
     Some(PathBuf::from(home).join(".cargo").join("bin"))
 }
 
+/// Wine's version when the launcher runs under Wine, which has no winget and
+/// can't build the game: Wine's ntdll exports wine_get_version, Windows'
+/// doesn't.
+#[cfg(windows)]
+fn wine_version() -> Option<String> {
+    use std::ffi::{c_char, c_void, CStr};
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetModuleHandleA(name: *const c_char) -> *mut c_void;
+        fn GetProcAddress(module: *mut c_void, name: *const c_char) -> *mut c_void;
+    }
+    // SAFETY: plain lookups by name; wine_get_version takes nothing and
+    // returns a static NUL-terminated string
+    unsafe {
+        let ntdll = GetModuleHandleA(c"ntdll.dll".as_ptr());
+        if ntdll.is_null() {
+            return None;
+        }
+        let found = GetProcAddress(ntdll, c"wine_get_version".as_ptr());
+        if found.is_null() {
+            return None;
+        }
+        let get: extern "C" fn() -> *const c_char = std::mem::transmute(found);
+        let version = get();
+        Some(if version.is_null() { String::new() } else { CStr::from_ptr(version).to_string_lossy().into_owned() })
+    }
+}
+
+#[cfg(not(windows))]
+fn wine_version() -> Option<String> {
+    None
+}
+
+/// what to do instead of building under Wine.
+const UNDER_WINE: &str = "The launcher is running under Wine, where the build tools can't be installed and the game can't be \
+built. Two ways that work: build on Linux itself (install git, gcc and rustup from your distribution, then run \
+\"cargo build-game <your .3ds>\" in the project folder), or build on a Windows PC and copy the project folder over; \
+the built game runs fine under Wine.";
+
 /// a 64-bit gcc: on PATH, or where winget's WinLibs and MSYS2 put theirs,
 /// skipping old 32-bit MinGW ones that may come first on PATH
 fn find_gcc() -> GccSearch {
@@ -469,6 +508,8 @@ struct Launcher {
     job: Arc<Mutex<Job>>,
     show_log: bool,
     message: Option<String>,
+    /// Wine's version, when it runs under Wine
+    wine: Option<String>,
     updates: Arc<Mutex<Updates>>,
     /// what to do once the running job works: rebuild after an update
     then_build: bool,
@@ -510,6 +551,8 @@ impl Launcher {
             job: Arc::new(Mutex::new(Job::default())),
             show_log: false,
             message: None,
+            // SMT4_LAUNCHER_WINE=<version> shows what Wine users see, to check it
+            wine: wine_version().or_else(|| std::env::var("SMT4_LAUNCHER_WINE").ok()),
             updates: Arc::new(Mutex::new(Updates::Unknown)),
             then_build: false,
             stale: false,
@@ -709,6 +752,13 @@ impl eframe::App for Launcher {
                             self.refresh_tools(ctx);
                         }
                     });
+                    if let Some(version) = &self.wine {
+                        let wine = if version.is_empty() { "Wine".to_owned() } else { format!("Wine {version}") };
+                        ui.colored_label(egui::Color32::from_rgb(240, 190, 80), format!("Running under {wine}"));
+                        ui.label(UNDER_WINE);
+                        ui.hyperlink_to("How to build on Linux", format!("{REPO}#building-on-linux"));
+                        ui.add_space(4.0);
+                    }
                     match &tools {
                         None => {
                             ui.horizontal(|ui| {
@@ -739,7 +789,7 @@ impl eframe::App for Launcher {
                                                 run_job(self.job.clone(), ctx.clone(), "Switching Rust to GNU", command);
                                             }
                                         } else if let Some(id) = tool.winget {
-                                            if cfg!(windows) && ui.button(format!("Install ({id})")).clicked() {
+                                            if cfg!(windows) && self.wine.is_none() && ui.button(format!("Install ({id})")).clicked() {
                                                 // in a console of its own, so its prompts show
                                                 let _ = Command::new("cmd")
                                                     .args(["/c", "start", "winget", "install", "-e", "--id", id])
@@ -949,6 +999,12 @@ impl eframe::App for Launcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn not_under_wine_here() {
+        // the tests run on Windows or Linux itself, never under Wine
+        assert_eq!(wine_version(), None);
+    }
 
     #[test]
     fn issue_links_fit_and_hide_the_home_folder() {
