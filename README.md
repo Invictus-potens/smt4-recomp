@@ -119,9 +119,9 @@ cargo build-game "/path/to/Shin Megami Tensei IV (USA).3ds"
 ./target/release/smt4 "/path/to/Shin Megami Tensei IV (USA).3ds"
 ```
 
-Zakuro and the builder support Linux, but this hasn't been tested on it yet:
-please [report](https://github.com/Invictus-potens/smt4-recomp/issues) how it
-goes. Another way that's known to work: build on a Windows PC and copy the
+A player has built and played it this way on Linux
+([#6](https://github.com/Invictus-potens/smt4-recomp/issues/6)); please
+[report](https://github.com/Invictus-potens/smt4-recomp/issues) any trouble. Another way that's known to work: build on a Windows PC and copy the
 project folder over; the Windows build runs fine under Wine.
 
 ## Playing

@@ -156,6 +156,81 @@ fn output(program: impl AsRef<std::ffi::OsStr>, args: &[&str]) -> Option<String>
     (out.status.success() && !text.is_empty()).then_some(text)
 }
 
+/// PATH as it is now, not as it was when the launcher opened: what an
+/// installer just added is in the registry, plus the folders Git and rustup
+/// install into, so a tool installed meanwhile is found without reopening.
+fn refresh_path() {
+    let mut dirs: Vec<PathBuf> = Vec::new();
+    #[cfg(windows)]
+    {
+        for key in [r"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment", r"HKCU\Environment"] {
+            if let Some(text) = output("reg", &["query", key, "/v", "Path"]) {
+                if let Some(value) = text.lines().find_map(|l| {
+                    let l = l.trim();
+                    l.split_once("REG_EXPAND_SZ").or_else(|| l.split_once("REG_SZ")).map(|(_, v)| v.trim().to_owned())
+                }) {
+                    dirs.extend(value.split(';').filter(|d| !d.is_empty()).map(|d| PathBuf::from(expand_vars(d))));
+                }
+            }
+        }
+        for var in ["ProgramFiles", "ProgramW6432"] {
+            if let Some(dir) = std::env::var_os(var) {
+                dirs.push(PathBuf::from(dir).join("Git").join("cmd"));
+            }
+        }
+    }
+    dirs.extend(cargo_bin());
+    dirs.extend(std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect::<Vec<_>>()).unwrap_or_default());
+    let mut seen: Vec<String> = Vec::new();
+    dirs.retain(|d| {
+        let key = d.to_string_lossy().trim_end_matches(['\\', '/']).to_lowercase();
+        let new = !key.is_empty() && !seen.contains(&key);
+        seen.push(key);
+        new
+    });
+    if let Ok(path) = std::env::join_paths(dirs) {
+        // SAFETY: called on the UI thread before the checks that read it start
+        std::env::set_var("PATH", path);
+    }
+}
+
+/// %NAME% in a registry value replaced by the variable's value.
+fn expand_vars(text: &str) -> String {
+    let mut out = String::new();
+    let mut rest = text;
+    while let Some(start) = rest.find('%') {
+        out.push_str(&rest[..start]);
+        let after = &rest[start + 1..];
+        match after.find('%') {
+            Some(end) => {
+                let name = &after[..end];
+                match std::env::var(name) {
+                    Ok(value) => out.push_str(&value),
+                    Err(_) => {
+                        out.push('%');
+                        out.push_str(name);
+                        out.push('%');
+                    }
+                }
+                rest = &after[end + 1..];
+            }
+            None => {
+                out.push_str(&rest[start..]);
+                rest = "";
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// a program in Rust's own folder when it's there, as rustup is right after
+/// it's installed, or by name on PATH.
+fn rust_tool(name: &str) -> PathBuf {
+    let exe = if cfg!(windows) { format!("{name}.exe") } else { name.to_owned() };
+    cargo_bin().map(|bin| bin.join(&exe)).filter(|p| p.is_file()).unwrap_or_else(|| PathBuf::from(name))
+}
+
 fn cargo_bin() -> Option<PathBuf> {
     let home = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME"))?;
     Some(PathBuf::from(home).join(".cargo").join("bin"))
@@ -580,6 +655,7 @@ impl Launcher {
     }
 
     fn refresh_tools(&self, ctx: &egui::Context) {
+        refresh_path();
         let tools = self.tools.clone();
         let ctx = ctx.clone();
         *tools.lock().unwrap() = None;
@@ -784,7 +860,7 @@ impl eframe::App for Launcher {
                                         ui.add_space(20.0);
                                         if tool.name == "Rust" && tools.rust_msvc {
                                             if ui.button("Switch to the GNU toolchain").clicked() {
-                                                let mut command = Command::new("rustup");
+                                                let mut command = Command::new(rust_tool("rustup"));
                                                 command.args(["default", "stable-x86_64-pc-windows-gnu"]);
                                                 run_job(self.job.clone(), ctx.clone(), "Switching Rust to GNU", command);
                                             }
@@ -999,6 +1075,12 @@ impl eframe::App for Launcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn expands_registry_paths() {
+        std::env::set_var("SMT4_TEST_DIR", r"C:\Tools");
+        assert_eq!(expand_vars(r"%SMT4_TEST_DIR%\bin;%NOPE_NOT_SET%\x;50%"), r"C:\Tools\bin;%NOPE_NOT_SET%\x;50%");
+    }
 
     #[test]
     fn not_under_wine_here() {
