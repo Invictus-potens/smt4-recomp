@@ -217,6 +217,13 @@ an image doesn't change: [MODDING.md](docs/MODDING.md).
   comes with Strawberry Perl has a linker too old for current Rust. The build
   skips it on its own when another 64-bit gcc is installed; install one with
   `winget install BrechtSanders.WinLibs.POSIX.UCRT`.
+- **``linking with `x86_64-w64-mingw32-gcc` failed`` while compiling
+  `smt4-build`**: Rust links the builder itself with the first
+  `x86_64-w64-mingw32-gcc` on PATH, before the builder can pick a better one,
+  and that's usually Strawberry Perl's or an old MinGW. Install WinLibs as
+  above and either move its `bin` folder above the old one in PATH, or set
+  `CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER` to the full path of its
+  `gcc.exe` before `cargo build-game`. The launcher does this on its own.
 - **"Rust uses the MSVC toolchain"**, or errors about `link.exe`: run
   `rustup default stable-x86_64-pc-windows-gnu`.
 - **"is title ..., this project is for Shin Megami Tensei IV (USA)"**: only

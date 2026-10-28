@@ -236,6 +236,30 @@ fn use_compiler(cc: &str, ar: &str) {
     }
 }
 
+/// the variable that picks the linker Rust uses for the host, as in
+/// CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER
+fn linker_var(host: &str) -> String {
+    format!("CARGO_TARGET_{}_LINKER", host.to_uppercase().replace(['-', '.'], "_"))
+}
+
+/// on windows-gnu, Rust links with the first x86_64-w64-mingw32-gcc on PATH,
+/// which can be Strawberry Perl's even when a good gcc was picked above:
+/// link with that one too, for 3dsrecomp and the game (#10)
+fn use_linker(host: &str, cc: &str) {
+    if !host.ends_with("windows-gnu") {
+        return;
+    }
+    let key = linker_var(host);
+    match std::env::var_os(&key) {
+        Some(linker) => println!("Linker: {} (from {key})", linker.to_string_lossy()),
+        None => {
+            let gcc = which(cc).unwrap_or_else(|| PathBuf::from(cc));
+            println!("Linker: {}", gcc.display());
+            set_env(&key, gcc);
+        }
+    }
+}
+
 fn check_tools() {
     step("1. tools");
     for (tool, hint) in [("cargo", "install Rust from https://rustup.rs"), ("git", "install git from https://git-scm.com")] {
@@ -263,6 +287,7 @@ fn check_tools() {
         );
     }
     use_compiler(&cc, &ar);
+    use_linker(&host, &cc);
     // run by `cargo run`, this program has this package's variables, which
     // aren't the game's or 3dsrecomp's
     for (key, _) in std::env::vars_os() {
@@ -574,6 +599,12 @@ mod tests {
     fn spots_strawberry_perls_gcc() {
         assert!(is_strawberry(Path::new(r"C:\Strawberry\c\bin\gcc.exe")));
         assert!(!is_strawberry(Path::new(r"C:\msys64\ucrt64\bin\gcc.exe")));
+    }
+
+    #[test]
+    fn names_the_linker_variable() {
+        assert_eq!(linker_var("x86_64-pc-windows-gnu"), "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER");
+        assert_eq!(linker_var("aarch64-pc-windows-gnullvm"), "CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER");
     }
 
     #[test]

@@ -309,6 +309,9 @@ enum GccSearch {
     None,
 }
 
+/// the variable that picks the linker Rust uses to build for this PC
+const LINKER_VAR: &str = "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER";
+
 fn is_strawberry(gcc: &Path) -> bool {
     gcc.to_string_lossy().to_lowercase().contains("strawberry")
 }
@@ -707,6 +710,11 @@ impl Launcher {
             .env("CC", gcc)
             .env("AR", ar)
             .env("PATH", self.env_path(tools));
+        // Rust would link the builder with the first x86_64-w64-mingw32-gcc
+        // on PATH, which may be Strawberry Perl's: use the gcc found above (#10)
+        if cfg!(windows) && std::env::var_os(LINKER_VAR).is_none() {
+            command.env(LINKER_VAR, gcc);
+        }
         run_job(self.job.clone(), ctx.clone(), "Building the game", command);
     }
 
