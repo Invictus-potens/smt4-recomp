@@ -6,6 +6,8 @@ use std::ffi::{c_void, CStr};
 use std::os::raw::c_char;
 use std::ptr::addr_of;
 
+mod alignment;
+
 extern "C" {
     static recomp_abi: u32;
     static recomp_entry_count: u32;
@@ -65,5 +67,5 @@ fn main() {
             recomp_module_count,
         )
     };
-    zakuro::run(Some(code));
+    zakuro::run_with(Some(code), Some(Box::new(alignment::Alignment::default())));
 }
