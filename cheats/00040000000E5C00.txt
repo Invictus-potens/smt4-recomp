@@ -81,3 +81,11 @@ D1000000 00000000
 [Easy Recruit]
 *Every negotiation goes your way: answers please the demon, refusing or not having what it asks still works, and it doesn't run off or cheat you. It still asks for things; turn it off to negotiate normally. Needs the smt4-recomp build.
 204EFF05 00000001
+
+[Show Alignment]
+*Shows the hero's Law/Chaos alignment in the bottom right corner: Law is +9 and up, Chaos -9 and down, Neutral between, as the endings count it. Needs the smt4-recomp build.
+204EFF06 00000001
+
+[Alignment Notices]
+*Shows a notice each time a choice changes the hero's alignment, by how much and toward which side. Needs the smt4-recomp build.
+204EFF07 00000001

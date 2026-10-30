@@ -51,6 +51,8 @@ dentro do jogo.
   e App Points, escolhidos no menu de cheats durante o jogo.
 - **Easy Recruit**: as negociações com demônios sempre dão certo, pelo menu
   de cheats.
+- **Alinhamento visível**: o alinhamento Law/Chaos, que o jogo esconde, num
+  canto da tela, e um aviso a cada escolha que muda ele.
 - **60 FPS** (o jogo roda duas vezes mais rápido) e **30 FPS** para voltar.
 - Cheats da comunidade: Macca no máximo, App Points, itens, EXP, HP/MP e
   atributos do herói.
@@ -157,6 +159,8 @@ outros são códigos Action Replay comuns.
 | Hero EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplica a EXP do herói nas batalhas. |
 | Demon EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplica a EXP dos demônios (grupo e estoque). |
 | App Points x2 / x3 / x5 *(smt4-recomp)* | Multiplica os App Points. |
+| Show Alignment *(smt4-recomp)* | O alinhamento Law/Chaos do herói no canto inferior direito: +9 ou mais é Law, -9 ou menos é Chaos, Neutral entre os dois, como os finais contam. |
+| Alignment Notices *(smt4-recomp)* | Um aviso a cada escolha que muda o alinhamento, de quanto e para qual lado. |
 | Easy Recruit *(smt4-recomp)* | Toda negociação dá certo: as respostas funcionam, recusar ou não ter o que o demônio pede ainda funciona, e ele não foge nem te engana. Ele ainda pede coisas. |
 | 60 FPS *(Enhancements)* | A lógica do jogo segue o frame rate, então tudo fica **duas vezes mais rápido**. Desligar **não** volta a velocidade normal: use o 30 FPS para isso. |
 | 30 FPS *(Enhancements)* | O padrão do jogo; desfaz o 60 FPS. |
@@ -166,7 +170,8 @@ Ligue só um de cada multiplicador. Desligar um multiplicador ou o widescreen
 volta ao normal sozinho.
 
 Como funcionam (em inglês): [MULTIPLIERS.md](docs/MULTIPLIERS.md),
-[WIDESCREEN.md](docs/WIDESCREEN.md), [RECRUIT.md](docs/RECRUIT.md).
+[WIDESCREEN.md](docs/WIDESCREEN.md), [RECRUIT.md](docs/RECRUIT.md),
+[ALIGNMENT.md](docs/ALIGNMENT.md).
 
 ## Controles
 

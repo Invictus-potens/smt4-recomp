@@ -98,6 +98,10 @@ work:
   finding the registration flags or the "add to compendium" function
   and filling it in one go is likely simpler.
 - **Easy recruit**: done, see [RECRUIT.md](RECRUIT.md).
+- **Alignment shown**: done as an overlay (a corner line and notices), see
+  [ALIGNMENT.md](ALIGNMENT.md). For later: the value inside the game's own
+  status screen, as if the game showed it, which takes changing the code
+  that draws that screen.
 
 - **Upscaled portraits**: tested, every portrait at 4x with Real-ESRGAN as
   a texture pack, see [UPSCALE.md](UPSCALE.md). Next: the rest of the

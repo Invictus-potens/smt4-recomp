@@ -51,6 +51,8 @@ cheat menu.
   Points, each picked from the cheat menu while playing.
 - **Easy Recruit**: demon negotiations always go your way, from the cheat
   menu.
+- **Alignment shown**: the hidden Law/Chaos alignment in a corner, and a
+  notice each time a choice changes it.
 - **60 FPS** (the game runs twice as fast with it) and **30 FPS** to go back.
 - Community cheats: max Macca, App Points, items, hero EXP, HP/MP and stats.
 - Everything Zakuro has: Vulkan or OpenGL, screen layouts, scaling and
@@ -155,6 +157,8 @@ others are standard Action Replay codes.
 | Hero EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplies the hero's EXP from battles. |
 | Demon EXP x2 / x3 / x5 *(smt4-recomp)* | Multiplies the EXP demons get (party and stock). |
 | App Points x2 / x3 / x5 *(smt4-recomp)* | Multiplies App Points. |
+| Show Alignment *(smt4-recomp)* | The hero's Law/Chaos alignment in the bottom right corner: +9 and up is Law, -9 and down is Chaos, Neutral between, as the endings count it. |
+| Alignment Notices *(smt4-recomp)* | A notice each time a choice changes the alignment, by how much and toward which side. |
 | Easy Recruit *(smt4-recomp)* | Every negotiation goes your way: answers work, refusing or not having what it asks still works, and the demon doesn't run off or cheat you. It still asks for things. |
 | 60 FPS *(Enhancements)* | The game logic is tied to the frame rate, so everything runs **twice as fast**. Turning it off does **not** bring the normal speed back: use 30 FPS for that. |
 | 30 FPS *(Enhancements)* | The game's default; undoes 60 FPS. |
@@ -164,7 +168,8 @@ Turn on only one of each multiplier. Turning a multiplier or widescreen
 cheat off goes back to normal on its own.
 
 How they work: [MULTIPLIERS.md](docs/MULTIPLIERS.md),
-[WIDESCREEN.md](docs/WIDESCREEN.md), [RECRUIT.md](docs/RECRUIT.md).
+[WIDESCREEN.md](docs/WIDESCREEN.md), [RECRUIT.md](docs/RECRUIT.md),
+[ALIGNMENT.md](docs/ALIGNMENT.md).
 
 ## Controls
 
