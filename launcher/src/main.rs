@@ -10,6 +10,7 @@ use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use eframe::egui;
 use serde::{Deserialize, Serialize};
@@ -588,6 +589,8 @@ struct Launcher {
     message: Option<String>,
     /// Wine's version, when it runs under Wine
     wine: Option<String>,
+    /// what a game that closed right away said, for the window
+    played: Arc<Mutex<Option<String>>>,
     updates: Arc<Mutex<Updates>>,
     /// what to do once the running job works: rebuild after an update
     then_build: bool,
@@ -630,6 +633,7 @@ impl Launcher {
             show_log: false,
             message: None,
             // SMT4_LAUNCHER_WINE=<version> shows what Wine users see, to check it
+            played: Arc::new(Mutex::new(None)),
             wine: wine_version().or_else(|| std::env::var("SMT4_LAUNCHER_WINE").ok()),
             updates: Arc::new(Mutex::new(Updates::Unknown)),
             then_build: false,
@@ -734,12 +738,60 @@ impl Launcher {
         run_job(self.job.clone(), ctx.clone(), "Updating the project", command);
     }
 
-    fn play(&mut self) {
+    fn play(&mut self, ctx: &egui::Context) {
         let (Some(rom), program) = (&self.config.rom, self.program()) else { return };
-        let started = Command::new(&program).arg(rom).current_dir(program.parent().unwrap_or(Path::new("."))).spawn();
-        self.message = Some(match started {
-            Ok(_) => "The game is starting.".into(),
-            Err(error) => format!("Could not start {}: {error}", program.display()),
+        // what the game prints goes to a file, so a game that closes at once
+        // can say why here, and in Copy the log and Report a problem
+        let log_path = data_dir().join("game.log");
+        let _ = std::fs::create_dir_all(data_dir());
+        let mut command = Command::new(&program);
+        command.arg(rom).current_dir(program.parent().unwrap_or(Path::new(".")));
+        // the compiler's folder too, for a toolchain whose runtime DLLs the
+        // game was linked against
+        if let Some(tools) = self.tools.lock().unwrap().as_ref() {
+            command.env("PATH", self.env_path(tools));
+        }
+        if let Ok(file) = std::fs::File::create(&log_path) {
+            if let Ok(copy) = file.try_clone() {
+                command.stdout(file).stderr(copy);
+            }
+        }
+        let started = Instant::now();
+        let child = quiet(&mut command).spawn();
+        let mut child = match child {
+            Ok(child) => child,
+            Err(error) => {
+                self.message = Some(format!("Could not start {}: {error}", program.display()));
+                return;
+            }
+        };
+        self.message = Some("The game is starting.".into());
+        let job = self.job.clone();
+        let ctx = ctx.clone();
+        let message = self.played.clone();
+        std::thread::spawn(move || {
+            let status = child.wait();
+            let quick = started.elapsed() < Duration::from_secs(20);
+            let failed = status.as_ref().map(|s| !s.success()).unwrap_or(true);
+            if !(quick || failed) {
+                return;
+            }
+            let code = match &status {
+                Ok(s) => s.code().map(|c| format!("exit code {c} (0x{:08X})", c as u32)).unwrap_or_else(|| "no exit code".into()),
+                Err(error) => error.to_string(),
+            };
+            let output = std::fs::read_to_string(&log_path).unwrap_or_default();
+            let mut j = job.lock().unwrap();
+            *j = Job { what: "Playing".into(), result: Some(false), ..Default::default() };
+            j.log.push(format!("the game closed after {:.0} s, {code}", started.elapsed().as_secs_f32()));
+            for line in output.lines().rev().take(60).collect::<Vec<_>>().into_iter().rev() {
+                j.log.push(line.to_owned());
+            }
+            drop(j);
+            *message.lock().unwrap() = Some(format!(
+                "The game closed right away ({code}). Tick Show the log to see what it said, and use Report a problem to send it."
+            ));
+            ctx.request_repaint();
         });
     }
 }
@@ -780,6 +832,10 @@ impl eframe::App for Launcher {
                     self.stale = false;
                 }
             }
+        }
+        if let Some(text) = self.played.lock().unwrap().take() {
+            self.message = Some(text);
+            self.show_log = true;
         }
         let updates = self.updates.lock().unwrap().clone();
         let source_ok = is_source(&self.source());
@@ -983,7 +1039,7 @@ impl eframe::App for Launcher {
                         if built {
                             let play = egui::Button::new(egui::RichText::new("  Play  ").size(20.0));
                             if ui.add_enabled(!running && rom_ok, play).clicked() {
-                                self.play();
+                                self.play(ctx);
                             }
                             if ui.add_enabled(can_build, egui::Button::new("Rebuild")).clicked() {
                                 if let Some(tools) = &tools {
