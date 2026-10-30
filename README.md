@@ -205,7 +205,8 @@ cargo fit-texture <assets>\textures\tex\stex\stbustup\st_bu_pc001.png my_picture
 
 It fits your picture where the original's character is and installs it as a
 texture pack; restart the game to see it. Step by step, and what to do when
-an image doesn't change: [MODDING.md](docs/MODDING.md).
+an image doesn't change: [MODDING.md](docs/MODDING.md). Upscaling the
+portraits with AI: [UPSCALE.md](docs/UPSCALE.md).
 
 ## Troubleshooting
 

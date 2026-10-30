@@ -99,6 +99,11 @@ work:
   and filling it in one go is likely simpler.
 - **Easy recruit**: done, see [RECRUIT.md](RECRUIT.md).
 
+- **Upscaled portraits**: tested, every portrait at 4x with Real-ESRGAN as
+  a texture pack, see [UPSCALE.md](UPSCALE.md). Next: the rest of the
+  textures, a `cargo upscale-pack` tool for players, and later a mod tool
+  to give a demon a picture of your own.
+
 Other ideas:
 - **Instant kill**: battle cheat, lower priority.
 - **60 FPS as a Zakuro "enhancement"**: merged as
