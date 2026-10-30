@@ -51,8 +51,8 @@ game. This project adds one to Zakuro: `zakuro::run_with(linked, overlay)`
 takes a `GameOverlay`, which gets the game's memory after every frame and
 returns a line for the corner and, now and then, a notice. Zakuro draws them
 with its own menus, so nothing in the game's screens or code is touched.
-It's proposed upstream; until it's there, the build uses the branch on the
-fork.
+It's in Zakuro since
+[fearkov/zakuro#24](https://github.com/fearkov/zakuro/pull/24).
 
 `src/alignment.rs`:
 - reads each cheat's control byte (`0x004EFF06` Show Alignment,

@@ -8,9 +8,7 @@ publish = false
 
 [dependencies]
 log = "0.4"
-# the fork's game-overlay branch has zakuro::run_with, proposed upstream;
-# back to fearkov/zakuro once it's merged there
-zakuro = { git = "https://github.com/Invictus-potens/zakuro", branch = "game-overlay" }
+zakuro = { git = "https://github.com/fearkov/zakuro" }
 
 # a project of its own, whatever directory it sits in
 [workspace]
