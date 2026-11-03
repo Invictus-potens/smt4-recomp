@@ -48,11 +48,20 @@ static Knob hero_exp_knob = { CTRL_HERO_EXP, 0, 0 };
 static Knob app_knob = { CTRL_APP_POINTS, 0, 0 };
 static Knob demon_exp_knob = { CTRL_DEMON_EXP, 0, 0 };
 
+/* milliseconds from a steady clock. timespec_get isn't in the older msvcrt
+   MinGW-w64 (MSYS2's mingw64), only in UCRT ones, so ask Windows (#15) */
+#ifdef _WIN32
+unsigned long long __stdcall GetTickCount64(void);
+static uint64_t now_ms(void) {
+    return GetTickCount64();
+}
+#else
 static uint64_t now_ms(void) {
     struct timespec ts;
-    timespec_get(&ts, TIME_UTC);
+    clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint64_t)ts.tv_sec * 1000u + (uint64_t)ts.tv_nsec / 1000000u;
 }
+#endif
 
 /* the multiplier a knob's cheat asks for, 1 when its cheat is off */
 static uint32_t knob_read(Context *ctx, Knob *knob) {
