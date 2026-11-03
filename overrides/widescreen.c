@@ -31,11 +31,20 @@
 static uint8_t cached;
 static uint64_t cached_at;
 
+/* milliseconds from a steady clock. timespec_get isn't in the older msvcrt
+   MinGW-w64 (MSYS2's mingw64), only in UCRT ones, so ask Windows (#15) */
+#ifdef _WIN32
+unsigned long long __stdcall GetTickCount64(void);
+static uint64_t now_ms(void) {
+    return GetTickCount64();
+}
+#else
 static uint64_t now_ms(void) {
     struct timespec ts;
-    timespec_get(&ts, TIME_UTC);
+    clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint64_t)ts.tv_sec * 1000u + (uint64_t)ts.tv_nsec / 1000000u;
 }
+#endif
 
 /* the shape the cheat asks for, 0 when it's off; cleared after reading, as
  * in multipliers.c, since Zakuro doesn't undo a cheat that's turned off */
