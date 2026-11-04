@@ -281,15 +281,21 @@ the built game runs fine under Wine.";
 fn find_gcc() -> GccSearch {
     let name = if cfg!(windows) { "gcc.exe" } else { "gcc" };
     let mut dirs: Vec<PathBuf> = std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect()).unwrap_or_default();
-    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
-        let packages = PathBuf::from(local).join("Microsoft").join("WinGet").join("Packages");
-        if let Ok(entries) = std::fs::read_dir(packages) {
+    // winget puts portable packages in the user's folder, or in Program
+    // Files when installed for every user (from an administrator console)
+    let winget_roots = [
+        std::env::var_os("LOCALAPPDATA").map(|d| PathBuf::from(d).join("Microsoft").join("WinGet")),
+        std::env::var_os("ProgramFiles").map(|d| PathBuf::from(d).join("WinGet")),
+    ];
+    for root in winget_roots.into_iter().flatten() {
+        if let Ok(entries) = std::fs::read_dir(root.join("Packages")) {
             for entry in entries.flatten() {
                 if entry.file_name().to_string_lossy().contains("WinLibs") {
                     dirs.push(entry.path().join("mingw64").join("bin"));
                 }
             }
         }
+        dirs.push(root.join("Links"));
     }
     dirs.extend([r"C:\msys64\ucrt64\bin", r"C:\msys64\mingw64\bin"].map(PathBuf::from));
     let is_64 = |gcc: &PathBuf| output(gcc, &["-dumpmachine"]).is_some_and(|machine| machine.starts_with("x86_64"));
@@ -930,9 +936,13 @@ impl eframe::App for Launcher {
                                             }
                                         } else if let Some(id) = tool.winget {
                                             if cfg!(windows) && self.wine.is_none() && ui.button(format!("Install ({id})")).clicked() {
-                                                // in a console of its own, so its prompts show
+                                                // in a console of its own, so its prompts show;
+                                                // --force because the tool wasn't found, so if
+                                                // winget thinks it's installed (its folder deleted
+                                                // by hand, say) that's out of date: without it
+                                                // winget only says "No available upgrade found"
                                                 let _ = Command::new("cmd")
-                                                    .args(["/c", "start", "winget", "install", "-e", "--id", id])
+                                                    .args(["/c", "start", "winget", "install", "-e", "--force", "--id", id])
                                                     .spawn();
                                                 self.message = Some(format!(
                                                     "Installing {}. When it's done, press Check again (Rust may need the launcher reopened).",
