@@ -318,6 +318,39 @@ fn rom_title(header: &[u8]) -> Option<u64> {
     }
 }
 
+/// why the game's code can't be read from a .3ds/.cci/.cxi, if it can't:
+/// the ExeFS of its executable partition has no .code, which is what an
+/// encrypted dump looks like. 3dsrecomp only finds this out at step 4, and
+/// it doesn't spot dumps encrypted with the original key, the usual one (#15)
+fn unreadable_code(rom: &mut (impl std::io::Read + std::io::Seek)) -> Option<String> {
+    use std::io::SeekFrom;
+    const MEDIA_UNIT: u64 = 0x200;
+    let mut read = |at: u64, len: usize| -> Option<Vec<u8>> {
+        let mut bytes = vec![0; len];
+        rom.seek(SeekFrom::Start(at)).ok()?;
+        rom.read_exact(&mut bytes).ok()?;
+        Some(bytes)
+    };
+    let u32_at = |bytes: &[u8], at: usize| u32::from_le_bytes(bytes[at..at + 4].try_into().unwrap()) as u64;
+    let start = read(0, 0x200)?;
+    // a cartridge image holds the executable as its first partition, and a
+    // .cxi is that partition by itself
+    let ncch = if &start[0x100..0x104] == b"NCSD" { u32_at(&start, 0x120) * MEDIA_UNIT } else { 0 };
+    let Some(header) = read(ncch, 0x200).filter(|h| &h[0x100..0x104] == b"NCCH") else {
+        return Some("its executable partition has no NCCH header".into());
+    };
+    // NoCrypto, in the flags: set by whatever decrypted it
+    let encrypted = header[0x18F] & 0x04 == 0;
+    let exefs = ncch + u32_at(&header, 0x1A0) * MEDIA_UNIT;
+    let has_code =
+        read(exefs, 0x200).is_some_and(|table| table.chunks(16).take(10).any(|entry| entry[..8] == *b".code\0\0\0"));
+    match (has_code, encrypted) {
+        (true, _) => None,
+        (false, true) => Some("it is encrypted".into()),
+        (false, false) => Some("its game code can't be found in it (the ExeFS has no .code)".into()),
+    }
+}
+
 fn check_rom(rom: &Path) {
     step("2. ROM");
     let name = rom.file_name().unwrap_or(rom.as_os_str()).to_string_lossy();
@@ -333,6 +366,13 @@ fn check_rom(rom: &Path) {
     if title != TITLE_ID {
         fail(&format!(
             "{name} is title {title:016X}, this project is for Shin Megami Tensei IV (USA), {TITLE_ID:016X}"
+        ));
+    }
+    let problem = std::fs::File::open(rom).ok().and_then(|mut file| unreadable_code(&mut file));
+    if let Some(problem) = problem {
+        fail(&format!(
+            "{name} is Shin Megami Tensei IV (USA), but {problem}: it isn't a decrypted dump. \
+             Make your own dump of the game with GodMode9 and decrypt it there, then build with that one"
         ));
     }
     let size = rom.metadata().map(|m| m.len()).unwrap_or(0);
@@ -605,6 +645,34 @@ mod tests {
     fn names_the_linker_variable() {
         assert_eq!(linker_var("x86_64-pc-windows-gnu"), "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER");
         assert_eq!(linker_var("aarch64-pc-windows-gnullvm"), "CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER");
+    }
+
+    /// a cartridge image with one partition: its NCCH marked NoCrypto or
+    /// not, its ExeFS with a .code or, as when it's encrypted, garbage
+    fn cartridge(decrypted: bool, code: bool) -> std::io::Cursor<Vec<u8>> {
+        let mut rom = vec![0u8; 0x1000];
+        rom[0x100..0x104].copy_from_slice(b"NCSD");
+        rom[0x120..0x124].copy_from_slice(&2u32.to_le_bytes()); // NCCH at 0x400
+        rom[0x500..0x504].copy_from_slice(b"NCCH");
+        rom[0x58F] = if decrypted { 0x04 } else { 0 };
+        rom[0x5A0..0x5A4].copy_from_slice(&2u32.to_le_bytes()); // ExeFS at 0x800
+        let name: &[u8; 8] = if code { b".code\0\0\0" } else { b"\x8f\x13\xa2\x07\x51\xe4\x3c\x90" };
+        rom[0x800..0x808].copy_from_slice(name);
+        rom[0x810..0x818].copy_from_slice(b"banner\0\0");
+        std::io::Cursor::new(rom)
+    }
+
+    #[test]
+    fn spots_dumps_whose_code_cant_be_read() {
+        assert_eq!(unreadable_code(&mut cartridge(true, true)), None);
+        assert_eq!(unreadable_code(&mut cartridge(false, false)).as_deref(), Some("it is encrypted"));
+        assert!(unreadable_code(&mut cartridge(true, false)).unwrap().contains("no .code"));
+        // a decrypted dump whose flags don't say so still builds
+        assert_eq!(unreadable_code(&mut cartridge(false, true)), None);
+        // a .cxi: the partition by itself
+        let mut cxi = cartridge(true, true).into_inner().split_off(0x400);
+        cxi.resize(0x1000, 0);
+        assert_eq!(unreadable_code(&mut std::io::Cursor::new(cxi)), None);
     }
 
     #[test]

@@ -232,6 +232,9 @@ portraits with AI: [UPSCALE.md](docs/UPSCALE.md).
   `gcc.exe` before `cargo build-game`. The launcher does this on its own.
 - **"Rust uses the MSVC toolchain"**, or errors about `link.exe`: run
   `rustup default stable-x86_64-pc-windows-gnu`.
+- **"... but it is encrypted: it isn't a decrypted dump"** (or "the ExeFS
+  has no .code"): the game's code can't be read from that file. Dump your own
+  cartridge with GodMode9 and decrypt it there, then build with that file.
 - **"is title ..., this project is for Shin Megami Tensei IV (USA)"**: only
   the USA release is supported; the code differs between regions.
 - **The game runs twice as fast**: 60 FPS was on at some point. Turn on

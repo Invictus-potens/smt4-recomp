@@ -235,6 +235,10 @@ imagem não muda (em inglês): [MODDING.md](docs/MODDING.md).
   sozinho.
 - **"Rust uses the MSVC toolchain"**, ou erros sobre `link.exe`: rode
   `rustup default stable-x86_64-pc-windows-gnu`.
+- **"... but it is encrypted: it isn't a decrypted dump"** (ou "the ExeFS
+  has no .code"): o código do jogo não pode ser lido desse arquivo. Faça o
+  dump do seu próprio cartucho com o GodMode9 e descriptografe lá, depois
+  faça o build com esse arquivo.
 - **"is title ..., this project is for Shin Megami Tensei IV (USA)"**: só a
   versão americana é suportada; o código muda entre regiões.
 - **O jogo está duas vezes mais rápido**: o 60 FPS foi ligado em algum
