@@ -230,6 +230,10 @@ portraits with AI: [UPSCALE.md](docs/UPSCALE.md).
   above and either move its `bin` folder above the old one in PATH, or set
   `CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER` to the full path of its
   `gcc.exe` before `cargo build-game`. The launcher does this on its own.
+- **"git not found"** (or another tool) although it's installed: a folder in
+  your PATH may end with a stray `"`, which hides every folder after it from
+  Rust. The builder and launcher work around it; to fix it for good, remove
+  the `"` in Start → *Edit the system environment variables* → `Path`.
 - **"Rust uses the MSVC toolchain"**, or errors about `link.exe`: run
   `rustup default stable-x86_64-pc-windows-gnu`.
 - **"is title ..., this project is for Shin Megami Tensei IV (USA)"**: only

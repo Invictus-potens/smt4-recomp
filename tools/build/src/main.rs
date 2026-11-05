@@ -119,6 +119,36 @@ fn which(program: &str) -> Option<PathBuf> {
         .find(|candidate| candidate.is_file())
 }
 
+/// whether PATH has an odd number of `"`: Rust reads a `"` in PATH as the
+/// start of a quoted part, so one stray quote (as in `C:\Program Files\App"`)
+/// merges every folder after it into one, and git and the rest aren't found
+/// by this program or anything it runs (#19)
+fn stray_quote(path: &str) -> bool {
+    cfg!(windows) && path.matches('"').count() % 2 == 1
+}
+
+/// PATH's folders, split at every `;` with the quotes dropped when a stray
+/// quote would make Rust merge them
+fn path_dirs(path: &OsStr) -> Vec<PathBuf> {
+    let text = path.to_string_lossy();
+    if stray_quote(&text) {
+        return text.split(';').map(|dir| dir.replace('"', "")).filter(|dir| !dir.trim().is_empty()).map(PathBuf::from).collect();
+    }
+    std::env::split_paths(path).collect()
+}
+
+/// PATH without a stray quote, for this program and everything it runs
+fn clean_path() {
+    let Some(path) = std::env::var_os("PATH") else { return };
+    if !stray_quote(&path.to_string_lossy()) {
+        return;
+    }
+    if let Ok(clean) = std::env::join_paths(path_dirs(&path)) {
+        println!("note: PATH has a stray \" in it, which hides the folders after it; ignoring it for this build");
+        set_env("PATH", clean);
+    }
+}
+
 fn set_env(key: &str, value: impl AsRef<OsStr>) {
     // single-threaded: nothing reads the environment meanwhile
     std::env::set_var(key, value);
@@ -560,6 +590,7 @@ fn parse_args() -> Args {
 
 fn main() {
     let args = parse_args();
+    clean_path();
     let root = project_root();
     let work = root.join(".build");
     if args.low_priority {
@@ -605,6 +636,21 @@ mod tests {
     fn names_the_linker_variable() {
         assert_eq!(linker_var("x86_64-pc-windows-gnu"), "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER");
         assert_eq!(linker_var("aarch64-pc-windows-gnullvm"), "CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER");
+    }
+
+    #[test]
+    fn a_stray_quote_in_path_hides_nothing() {
+        // the PATH from #19, a quote left at the end of one folder
+        let path = OsStr::new(r#"C:\Windows;C:\Program Files\Calibre2";C:\Program Files\Tailscale\;C:\Program Files\Git\cmd"#);
+        let dirs = path_dirs(path);
+        if cfg!(windows) {
+            assert_eq!(dirs.len(), 4);
+            assert!(dirs.contains(&PathBuf::from(r"C:\Program Files\Git\cmd")));
+            assert!(std::env::join_paths(&dirs).is_ok());
+        }
+        // a quoted folder, as Windows allows, is still read as one
+        let quoted = OsStr::new(r#"C:\a;"C:\b;c";C:\d"#);
+        assert_eq!(path_dirs(quoted), std::env::split_paths(quoted).collect::<Vec<_>>());
     }
 
     #[test]
