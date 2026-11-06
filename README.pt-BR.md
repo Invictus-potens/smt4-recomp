@@ -233,6 +233,11 @@ imagem não muda (em inglês): [MODDING.md](docs/MODDING.md).
   ou defina `CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER` com o caminho completo
   do `gcc.exe` dele antes do `cargo build-game`. O launcher já faz isso
   sozinho.
+- **"git not found"** (ou outra ferramenta) mesmo instalada: alguma pasta do
+  seu PATH pode terminar com um `"` sobrando, o que esconde do Rust todas as
+  pastas depois dela. O builder e o launcher contornam isso; para corrigir de
+  vez, apague o `"` em Iniciar → *Editar as variáveis de ambiente do sistema*
+  → `Path`.
 - **"Rust uses the MSVC toolchain"**, ou erros sobre `link.exe`: rode
   `rustup default stable-x86_64-pc-windows-gnu`.
 - **"... but it is encrypted: it isn't a decrypted dump"** (ou "the ExeFS
