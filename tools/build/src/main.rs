@@ -128,22 +128,43 @@ fn stray_quote(path: &str) -> bool {
 }
 
 /// PATH's folders, split at every `;` with the quotes dropped when a stray
-/// quote would make Rust merge them
+/// quote would make Rust merge them, or when it already did
 fn path_dirs(path: &OsStr) -> Vec<PathBuf> {
     let text = path.to_string_lossy();
     if stray_quote(&text) {
         return text.split(';').map(|dir| dir.replace('"', "")).filter(|dir| !dir.trim().is_empty()).map(PathBuf::from).collect();
     }
-    std::env::split_paths(path).collect()
+    // cargo run (so cargo build-game, and the launcher's build) passes on
+    // what Rust merged, wrapped in quotes: "C:\Program Files\App;C:\Git\cmd;...".
+    // The quotes are balanced then, so split a quoted part again when a piece
+    // after its first starts with a drive: no folder's name can hold a ":"
+    std::env::split_paths(path)
+        .flat_map(|dir| {
+            let text = dir.to_string_lossy().into_owned();
+            let pieces: Vec<&str> = text.split(';').filter(|piece| !piece.trim().is_empty()).collect();
+            if pieces.iter().skip(1).any(|piece| drive_path(piece)) {
+                pieces.into_iter().map(PathBuf::from).collect()
+            } else {
+                vec![dir]
+            }
+        })
+        .collect()
+}
+
+/// whether a piece of PATH starts with a drive, as C:\ or C:/ do
+fn drive_path(dir: &str) -> bool {
+    let b = dir.trim().as_bytes();
+    b.len() >= 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && matches!(b[2], b'\\' | b'/')
 }
 
 /// PATH without a stray quote, for this program and everything it runs
 fn clean_path() {
     let Some(path) = std::env::var_os("PATH") else { return };
-    if !stray_quote(&path.to_string_lossy()) {
+    let dirs = path_dirs(&path);
+    if dirs == std::env::split_paths(&path).collect::<Vec<_>>() {
         return;
     }
-    if let Ok(clean) = std::env::join_paths(path_dirs(&path)) {
+    if let Ok(clean) = std::env::join_paths(dirs) {
         println!("note: PATH has a stray \" in it, which hides the folders after it; ignoring it for this build");
         set_env("PATH", clean);
     }
@@ -651,6 +672,15 @@ mod tests {
         // a quoted folder, as Windows allows, is still read as one
         let quoted = OsStr::new(r#"C:\a;"C:\b;c";C:\d"#);
         assert_eq!(path_dirs(quoted), std::env::split_paths(quoted).collect::<Vec<_>>());
+        // what a program started by cargo run gets: the merged folders,
+        // which cargo wraps in quotes, so they're balanced
+        let through_cargo = OsStr::new(r#"C:\cargo\bin;C:\Windows;"C:\Program Files\Calibre2;C:\Program Files\Tailscale\;C:\Program Files\Git\cmd";C:\rustlib"#);
+        if cfg!(windows) {
+            let dirs = path_dirs(through_cargo);
+            assert_eq!(dirs.len(), 6);
+            assert!(dirs.contains(&PathBuf::from(r"C:\Program Files\Git\cmd")));
+            assert!(std::env::join_paths(&dirs).is_ok());
+        }
     }
 
     #[test]

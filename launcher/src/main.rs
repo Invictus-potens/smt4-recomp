@@ -166,13 +166,33 @@ fn stray_quote(path: &str) -> bool {
 }
 
 /// PATH's folders, split at every `;` with the quotes dropped when a stray
-/// quote would make Rust merge them
+/// quote would make Rust merge them, or when it already did
 fn path_dirs(path: &std::ffi::OsStr) -> Vec<PathBuf> {
     let text = path.to_string_lossy();
     if stray_quote(&text) {
         return text.split(';').map(|dir| dir.replace('"', "")).filter(|dir| !dir.trim().is_empty()).map(PathBuf::from).collect();
     }
-    std::env::split_paths(path).collect()
+    // cargo run (so cargo build-game, and the launcher's build) passes on
+    // what Rust merged, wrapped in quotes: "C:\Program Files\App;C:\Git\cmd;...".
+    // The quotes are balanced then, so split a quoted part again when a piece
+    // after its first starts with a drive: no folder's name can hold a ":"
+    std::env::split_paths(path)
+        .flat_map(|dir| {
+            let text = dir.to_string_lossy().into_owned();
+            let pieces: Vec<&str> = text.split(';').filter(|piece| !piece.trim().is_empty()).collect();
+            if pieces.iter().skip(1).any(|piece| drive_path(piece)) {
+                pieces.into_iter().map(PathBuf::from).collect()
+            } else {
+                vec![dir]
+            }
+        })
+        .collect()
+}
+
+/// whether a piece of PATH starts with a drive, as C:\ or C:/ do
+fn drive_path(dir: &str) -> bool {
+    let b = dir.trim().as_bytes();
+    b.len() >= 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && matches!(b[2], b'\\' | b'/')
 }
 
 /// PATH as it is now, not as it was when the launcher opened: what an
@@ -1179,6 +1199,14 @@ mod tests {
             assert!(dirs.contains(&PathBuf::from(r"C:\Program Files\Git\cmd")));
             assert!(std::env::join_paths(&dirs).is_ok());
         }
+        // as the launcher gets it when started by cargo run
+        let through_cargo = std::ffi::OsStr::new(r#"C:\Windows;"C:\Program Files\Calibre2;C:\Program Files\Git\cmd""#);
+        if cfg!(windows) {
+            assert_eq!(path_dirs(through_cargo).len(), 3);
+        }
+        // a quoted folder with a ; in its name is still read as one
+        let quoted = std::ffi::OsStr::new(r#"C:\a;"C:\b;c";C:\d"#);
+        assert_eq!(path_dirs(quoted), std::env::split_paths(quoted).collect::<Vec<_>>());
     }
 
     #[test]
