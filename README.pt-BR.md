@@ -65,6 +65,9 @@ dentro do jogo.
 - Placa de vídeo com Vulkan (ou OpenGL 3.3).
 - **Seu próprio dump descriptografado** de *Shin Megami Tensei IV* (EUA),
   title ID `00040000000E5C00`, em `.3ds` ou `.cci`.
+- Vozes em japonês: aplique o patch de undub no dump e escolha a ROM
+  patcheada; ela compila e roda do mesmo jeito
+  ([#7](https://github.com/Invictus-potens/smt4-recomp/issues/7)).
 - Uns 10 GB livres em disco e 8 GB de RAM para a compilação.
 - Para compilar:
   - [Rust](https://rustup.rs) com o toolchain GNU:

@@ -64,6 +64,9 @@ cheat menu.
 - A graphics card with Vulkan (or OpenGL 3.3).
 - **Your own decrypted dump** of *Shin Megami Tensei IV* (USA), title ID
   `00040000000E5C00`, as `.3ds` or `.cci`.
+- Japanese voices: patch the dump with the undub patch and pick the patched
+  ROM; it builds and plays the same
+  ([#7](https://github.com/Invictus-potens/smt4-recomp/issues/7)).
 - About 10 GB of free disk space and 8 GB of RAM for the build.
 - To build:
   - [Rust](https://rustup.rs) with the GNU toolchain:
