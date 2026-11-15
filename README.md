@@ -20,6 +20,9 @@ cheat menu.
 > **Beta.** Played from a new game for more than 15 hours with no crash.
 > The rest of the game hasn't been played on it yet: please report what you
 > find in [Issues](../../issues).
+>
+> I work on this project on weekends, around my job and college, so replies
+> and fixes can take a few days.
 
 > **No game files or game code are included, and there is no download.** You
 > build it yourself from your own dump of the game. What the build makes

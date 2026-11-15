@@ -20,6 +20,9 @@ dentro do jogo.
 > **Beta.** Jogado de um jogo novo por mais de 10 horas, sem travamentos.
 > O resto do jogo ainda não foi jogado nele: relate o que encontrar em
 > [Issues](../../issues).
+>
+> Trabalho no projeto nos fins de semana, por causa do trabalho e da
+> faculdade, então respostas e correções podem levar alguns dias.
 
 > **Nenhum arquivo ou código do jogo está incluído, e não há download.** Você
 > compila a partir do seu próprio dump do jogo. O que a compilação gera
