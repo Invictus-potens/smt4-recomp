@@ -339,20 +339,32 @@ fn find_gcc() -> GccSearch {
     dirs.extend([r"C:\msys64\ucrt64\bin", r"C:\msys64\mingw64\bin"].map(PathBuf::from));
     let is_64 = |gcc: &PathBuf| output(gcc, &["-dumpmachine"]).is_some_and(|machine| machine.starts_with("x86_64"));
     let all: Vec<PathBuf> = dirs.into_iter().map(|dir| dir.join(name)).filter(|gcc| gcc.is_file()).collect();
-    match all.iter().find(|gcc| !is_strawberry(gcc) && is_64(gcc)) {
+    match all.iter().find(|gcc| !is_strawberry(gcc) && !in_spaced_folder(gcc) && is_64(gcc)) {
         Some(gcc) => GccSearch::Found(gcc.clone()),
-        None => match all.into_iter().find(|gcc| is_strawberry(gcc)) {
-            Some(gcc) => GccSearch::OnlyStrawberry(gcc),
-            None => GccSearch::None,
+        None => match all.iter().find(|gcc| in_spaced_folder(gcc) && is_64(gcc)) {
+            Some(gcc) => GccSearch::OnlySpaced(gcc.clone()),
+            None => match all.into_iter().find(|gcc| is_strawberry(gcc)) {
+                Some(gcc) => GccSearch::OnlyStrawberry(gcc),
+                None => GccSearch::None,
+            },
         },
     }
 }
 
 enum GccSearch {
     Found(PathBuf),
+    /// only ones in a folder with a space, which can't link anything (#25)
+    OnlySpaced(PathBuf),
     /// only Strawberry Perl's, whose linker is too old for current Rust
     OnlyStrawberry(PathBuf),
     None,
+}
+
+/// MinGW-w64's gcc hands the linker default-manifest.o by its full path
+/// unquoted, so from a folder with a space (winget's, when the Windows user
+/// name has one) it fails on everything; links don't help, gcc resolves them
+fn in_spaced_folder(gcc: &Path) -> bool {
+    cfg!(windows) && std::fs::canonicalize(gcc).unwrap_or_else(|_| gcc.to_path_buf()).to_string_lossy().contains(' ')
 }
 
 /// the variable that picks the linker Rust uses to build for this PC
@@ -393,8 +405,15 @@ fn check_tools() -> Tools {
             "Only {} found, from Strawberry Perl: its linker is too old for Rust. Install WinLibs.",
             gcc.display()
         ),
+        GccSearch::OnlySpaced(gcc) => format!(
+            "Only {} found, in a folder with a space, where gcc can't link. Extract the WinLibs zip from \
+             winlibs.com to C:\\mingw64 (a real folder, not a link) and add C:\\mingw64\\bin to PATH.",
+            gcc.display()
+        ),
         _ => "Compiles the recompiled game code (MinGW-w64).".into(),
     };
+    // winget would put it back in the same folder with a space
+    let winget = if matches!(search, GccSearch::OnlySpaced(_)) { None } else { Some("BrechtSanders.WinLibs.POSIX.UCRT") };
     tools.gcc = match search {
         GccSearch::Found(gcc) => Some(gcc),
         _ => None,
@@ -403,7 +422,7 @@ fn check_tools() -> Tools {
         name: "64-bit GCC",
         found: tools.gcc.as_ref().map(|p| p.display().to_string()),
         hint,
-        winget: Some("BrechtSanders.WinLibs.POSIX.UCRT"),
+        winget,
     });
 
     tools
@@ -1188,6 +1207,13 @@ impl eframe::App for Launcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[cfg(windows)]
+    fn spots_gcc_in_a_folder_with_a_space() {
+        assert!(in_spaced_folder(Path::new(r"C:\Users\Rafael Failache\mingw64\bin\gcc.exe")));
+        assert!(!in_spaced_folder(Path::new(r"C:\mingw64\bin\gcc.exe")));
+    }
 
     #[test]
     fn a_stray_quote_in_path_hides_nothing() {
