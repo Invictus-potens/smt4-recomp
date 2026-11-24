@@ -37,6 +37,7 @@ cheat menu.
 - [Playing](#playing)
 - [Cheats and enhancements](#cheats-and-enhancements)
 - [Controls](#controls)
+- [Mods and texture packs](#mods-and-texture-packs)
 - [Extracting assets](#extracting-assets)
 - [Troubleshooting](#troubleshooting)
 - [How it works](#how-it-works)
@@ -191,6 +192,24 @@ Keyboard defaults, all changeable in Settings. Controllers work too.
 | D-pad | Arrow keys | | Full screen | F11 |
 | Circle Pad | I J K L | | Fast forward | hold Tab |
 | C-Stick | T F G H | | Touch screen | mouse |
+
+## Mods and texture packs
+
+Mods go in `%APPDATA%\zakuro\mods\00040000000E5C00\` (paste that into the
+Explorer address bar). The launcher makes its two folders the first time you
+press **Play**:
+
+- **`textures\`**: texture packs, as made for Citra and Azahar (the PNGs
+  named `tex1_..._mip0.png`). Put the pack's pictures, or its folders, in
+  here.
+- **`romfs\`**: mods that replace the game's files, as made for Luma's
+  LayeredFS. Copy the contents of the mod's `romfs` folder in here, so its
+  folders (`battle`, `tex`, ...) sit straight inside `romfs\`.
+
+Restart the game after adding one. A mod that changes the game's code
+(`code.bin`, `code.ips`, `exefs`) doesn't work, because the code is
+recompiled from your own dump. Making your own pictures, and what to do when
+an image doesn't change: [MODDING.md](docs/MODDING.md).
 
 ## Extracting assets
 

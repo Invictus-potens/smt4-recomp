@@ -808,6 +808,13 @@ impl Launcher {
         // can say why here, and in Copy the log and Report a problem
         let log_path = data_dir().join("game.log");
         let _ = std::fs::create_dir_all(data_dir());
+        // where texture packs and file mods go, made so players find them (#28)
+        if let Some(appdata) = std::env::var_os("APPDATA") {
+            let mods = PathBuf::from(appdata).join("zakuro").join("mods").join("00040000000E5C00");
+            for folder in ["textures", "romfs"] {
+                let _ = std::fs::create_dir_all(mods.join(folder));
+            }
+        }
         let mut command = Command::new(&program);
         command.arg(rom).current_dir(program.parent().unwrap_or(Path::new(".")));
         // the compiler's folder too, for a toolchain whose runtime DLLs the

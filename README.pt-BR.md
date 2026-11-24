@@ -37,6 +37,7 @@ dentro do jogo.
 - [Jogando](#jogando)
 - [Cheats e melhorias](#cheats-e-melhorias)
 - [Controles](#controles)
+- [Mods e texture packs](#mods-e-texture-packs)
 - [Extraindo assets](#extraindo-assets)
 - [Problemas comuns](#problemas-comuns)
 - [Como funciona](#como-funciona)
@@ -193,6 +194,24 @@ Padrões do teclado, todos alteráveis em Settings. Controles também funcionam.
 | Direcional | Setas | | Tela cheia | F11 |
 | Circle Pad | I J K L | | Acelerar | segurar Tab |
 | C-Stick | T F G H | | Tela de toque | mouse |
+
+## Mods e texture packs
+
+Os mods vão em `%APPDATA%\zakuro\mods\00040000000E5C00\` (cole isso na
+barra de endereços do Explorer). O launcher cria as duas pastas na primeira
+vez que você clica em **Play**:
+
+- **`textures\`**: texture packs, como os feitos para Citra e Azahar (os PNGs
+  chamados `tex1_..._mip0.png`). Coloque aqui as imagens do pack, ou as pastas
+  dele.
+- **`romfs\`**: mods que trocam arquivos do jogo, como os feitos para o
+  LayeredFS do Luma. Copie aqui o conteúdo da pasta `romfs` do mod, para que
+  as pastas dele (`battle`, `tex`, ...) fiquem direto dentro de `romfs\`.
+
+Reinicie o jogo depois de adicionar um. Mods que mudam o código do jogo
+(`code.bin`, `code.ips`, `exefs`) não funcionam, porque o código é
+recompilado do seu próprio dump. Para fazer suas próprias imagens, e o que
+fazer quando uma imagem não muda (em inglês): [MODDING.md](docs/MODDING.md).
 
 ## Extraindo assets
 
